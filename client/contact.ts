@@ -1,0 +1,14 @@
+import { $, state, esc } from './ui.js';
+const whatsappIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20.4 11.6a8.4 8.4 0 0 1-12.5 7.3L3 20.3l1.4-4.7A8.4 8.4 0 1 1 20.4 11.6Z"/><path d="M8.1 7.2c.7-.6 1.3 1.8 1.5 2.3.1.4-.7.8-.6 1.2.7 1.7 2.1 2.9 3.8 3.4.4.1.8-.8 1.2-.7l2.1 1c.4.2.2 1-.1 1.4-1.5 1.6-5.2-.3-7.4-2.5C6.5 11.1 6.5 8.7 8.1 7.2Z"/></svg>';
+export const phoneLabel = (phone: string) => phone.startsWith('51') ? `+51 ${phone.slice(2, 5)} ${phone.slice(5, 8)} ${phone.slice(8)}` : `+${phone}`;
+export function contactLinks(message: string, compact = false) {
+  return state.store!.whatsapp.map((phone, n) => `<a class="btn ${n === 0 ? 'btn-whatsapp' : 'btn-outline'}" href="https://wa.me/${phone}?text=${encodeURIComponent(message)}" target="_blank" rel="noopener noreferrer">${whatsappIcon}<span>${compact ? phoneLabel(phone) : `${n === 0 ? 'Atención principal' : 'Atención alternativa'}<small>${phoneLabel(phone)}</small>`}</span></a>`).join('');
+}
+export function initContact() {
+  const button = document.createElement('button'); button.id = 'whatsapp-help'; button.className = 'whatsapp-float'; button.setAttribute('aria-label', 'Contactar a KUYARI por WhatsApp'); button.innerHTML = `${whatsappIcon}<span>Hablemos de tu regalo</span>`;
+  const dialog = document.createElement('dialog'); dialog.id = 'contact-dialog'; dialog.className = 'contact-modal'; dialog.setAttribute('aria-labelledby', 'contact-title');
+  dialog.innerHTML = `<button class="icon-btn contact-close" id="contact-close" aria-label="Cerrar contacto">✕</button><p class="eyebrow">TU CÓMPLICE EN CADA DETALLE</p><h2 id="contact-title">Hagamos una<br><em>linda sorpresa.</em></h2><p>Elige con quién conversar. Te ayudamos con productos disponibles, ideas y coordinación de entrega.</p><div class="contact-links">${contactLinks('Hola, KUYARI. Quisiera ayuda para elegir y coordinar un regalo personalizado.')}</div><p class="fine-print">Se abrirá WhatsApp con el mensaje preparado. Tú decides cuándo enviarlo.</p>`;
+  document.body.append(button, dialog); button.onclick = () => dialog.showModal(); $('#contact-close').onclick = () => dialog.close(); dialog.onclick = e => { if (e.target === dialog) dialog.close(); };
+  const footer = document.querySelector('#footer-contact'); if (footer) footer.innerHTML = contactLinks('Hola, KUYARI. Quisiera información sobre sus regalos.', true);
+}
+export const quickContact = (name: string, price: string) => `<details class="product-contact"><summary>¿Tienes una idea especial? Hablemos por WhatsApp</summary><p>Pregunta por ${esc(name)} o coordina una variación antes de crear tu pedido.</p><div class="contact-links">${contactLinks(`Hola, KUYARI. Me interesa ${name} (${price}). Quisiera consultar su disponibilidad y opciones de personalización.`, true)}</div></details>`;

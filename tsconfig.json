@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"], "strict": true,
+    "esModuleInterop": true, "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true, "outDir": "dist", "rootDir": ".",
+    "noEmitOnError": true, "sourceMap": false
+  },
+  "include": ["server/**/*.ts", "client/**/*.ts", "shared/**/*.ts"]
+}

@@ -1,0 +1,14 @@
+import { seedSeptember } from '../scripts/seed-september.mjs';
+import { fixture } from './helpers.mjs';
+import { createApp } from '../dist/server/app.js';
+import { createOrder } from '../dist/server/commerce.js';
+import { hashPassword } from '../dist/server/security.js';
+const { db, config, input, session } = fixture(); config.ORDER_CHANNEL = 'whatsapp'; config.APP_URL = 'http://127.0.0.1:3100';
+db.run('UPDATE products SET stock=100');
+seedSeptember(db);
+db.run('INSERT INTO users (id,email,password_hash,name,role,created_at) VALUES (?,?,?,?,?,?)', 'test-admin', 'admin@example.test', await hashPassword('AdministradorPrueba123!'), 'Admin de pruebas', 'admin', new Date().toISOString());
+for (const [slug, title] of [['privacidad', 'Privacidad'], ['terminos', 'Términos'], ['cambios', 'Cambios'], ['entregas', 'Entregas'], ['datos', 'Datos']]) db.run('INSERT INTO policies VALUES (?,?,?,0,?)', slug, title, 'Política para pruebas automatizadas, aislada de producción.', new Date().toISOString());
+await createOrder(db, config, input, session);
+export const server = createApp(db, config).listen(3100, '127.0.0.1');
+export const close = () => { server.closeAllConnections(); server.close(); db.close(); };
+for (const signal of ['SIGTERM', 'SIGINT']) process.on(signal, () => { server.closeAllConnections(); server.close(); db.close(); process.exit(0); });

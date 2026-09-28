@@ -1,0 +1,1 @@
+ALTER TABLE orders ADD COLUMN channel TEXT NOT NULL DEFAULT 'online';

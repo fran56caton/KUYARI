@@ -1,0 +1,50 @@
+{
+  "name": "kuyari",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "KUYARI: regalos personalizados y recuerdos digitales",
+  "scripts": {
+    "dev": "npm run build && node --env-file-if-exists=.env dist/server/main.js",
+    "start": "node --env-file-if-exists=.env dist/server/main.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "build": "tsc && node scripts/build.mjs",
+    "migrate": "node --env-file-if-exists=.env scripts/manage.mjs migrate",
+    "seed:demo": "node --env-file-if-exists=.env scripts/manage.mjs seed",
+    "admin:create": "node --env-file-if-exists=.env scripts/manage.mjs admin",
+    "test:e2e": "node tests/run-e2e.mjs",
+    "check": "npm run lint && npm run typecheck && npm test && npm run test:e2e"
+  },
+  "engines": {
+    "node": ">=24.15 <25"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1141.0",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "file-type": "^22.1.1",
+    "helmet": "^8.3.0",
+    "mercadopago": "^3.6.1",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.11",
+    "qrcode": "^1.5.4",
+    "sharp": "^0.35.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^24.19.0",
+    "@types/nodemailer": "^8.0.2",
+    "@types/qrcode": "^1.5.6",
+    "eslint": "^10.11.0",
+    "globals": "^17.12.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.70.1"
+  }
+}

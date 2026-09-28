@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { addItem, removeItem, changeQuantity, countItems, subtotal, normalizeCart, orderText } from '../src/cart-core.mjs';
+const sample = { id: 'caja', name: 'Caja floral', price: 75 };
+test('agrega y agrupa elementos iguales', () => { const cart = addItem(addItem([], sample), sample); assert.equal(cart.length, 1); assert.equal(cart[0].qty, 2); });
+test('calcula cantidades y subtotal', () => { const cart = addItem(addItem([], sample), { id: 'ramo', name: 'Ramo', price: 50 }); assert.equal(countItems(cart), 2); assert.equal(subtotal(cart), 125); });
+test('actualiza cantidad sin llegar a cero y elimina', () => { const cart = changeQuantity(addItem([], sample), 'caja', -1); assert.equal(cart[0].qty, 1); assert.deepEqual(removeItem(cart, 'caja'), []); });
+test('descarta información corrupta al recuperar', () => { assert.deepEqual(normalizeCart({}), []); assert.deepEqual(normalizeCart([{ id: 'x', name: 'X', price: -5, qty: 1 }]), []); });
+test('genera pedido con subtotal y detalle', () => { const message = orderText([{ ...sample, qty: 2, details: 'Cumpleaños' }], 'Entrega por confirmar'); assert.match(message, /S\/ 150\.00/); assert.match(message, /Cumpleaños/); assert.match(message, /Entrega por confirmar/); });
+test('rechaza productos con precios inválidos', () => assert.throws(() => addItem([], { ...sample, price: -1 }), TypeError));

@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+.env
+GUIA-PRIVADA.html
+data/
+dist/
+test-results/
+playwright-report/
