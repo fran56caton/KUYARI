@@ -15,11 +15,24 @@ const envSchema = z.object({
 });
 export type Config = z.infer<typeof envSchema>;
 export function readConfig(input: NodeJS.ProcessEnv = process.env): Config {
-  const c = envSchema.parse(input);
+  // Vercel no ofrece un disco persistente. /tmp permite arrancar la versión
+  // serverless para pruebas; la tienda real requiere una BD remota persistente.
+  const normalized = { ...input };
+  if (normalized.VERCEL) {
+    normalized.NODE_ENV ??= 'production';
+    normalized.TRUST_PROXY ??= 'true';
+    normalized.DB_PATH ??= '/tmp/kuyari.sqlite';
+    normalized.UPLOAD_DIR ??= '/tmp/kuyari-uploads';
+    if (!normalized.APP_URL || normalized.APP_URL === 'http://localhost:3000') {
+      const host = normalized.VERCEL_PROJECT_PRODUCTION_URL || normalized.VERCEL_URL;
+      if (host) normalized.APP_URL = `https://${host}`;
+    }
+  }
+  const c = envSchema.parse(normalized);
   c.APP_URL = new URL(c.APP_URL).origin;
   if (c.NODE_ENV === 'production') {
     if (!c.APP_URL.startsWith('https://')) throw new Error('APP_URL debe usar HTTPS en producción');
-    if (c.DB_PATH.includes('development') || c.DB_PATH === ':memory:') throw new Error('DB_PATH debe apuntar a un volumen persistente de producción');
+    if (!normalized.VERCEL && (c.DB_PATH.includes('development') || c.DB_PATH === ':memory:')) throw new Error('DB_PATH debe apuntar a un volumen persistente de producción');
     if (c.STORE_LIVE === 'true' && c.ORDER_CHANNEL === 'online' && (!paymentReady(c) || !c.SMTP_HOST || !c.SMTP_FROM || !c.S3_BUCKET || !c.BUSINESS_NAME || !c.BUSINESS_EMAIL || c.PAYMENT_MODE !== 'production')) {
       throw new Error('Completa pagos, correo, almacenamiento y datos comerciales antes de activar STORE_LIVE');
     }
