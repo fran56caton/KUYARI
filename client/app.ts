@@ -3,9 +3,9 @@ import { $, api, state, card, page, esc, fail, leavePage, type Store } from './u
 import { initCart, checkout } from './checkout.js';
 import { initContact, contactLinks } from './contact.js';
 const homeHTML = $('#contenido').innerHTML;
-const imports = { love: () => import('./love.js'), catalog: () => import('./catalog.js'), customer: () => import('./customer.js'), seasonal: () => import('./seasonal.js'), studio: () => import('./studio.js'), admin: () => import('./admin.js'), yape: () => import('./yape.js') };
+const imports = { garden: () => import('./garden.js'), love: () => import('./love.js'), catalog: () => import('./catalog.js'), customer: () => import('./customer.js'), seasonal: () => import('./seasonal.js'), studio: () => import('./studio.js'), admin: () => import('./admin.js'), yape: () => import('./yape.js') };
 function warmRoute(path: string) {
-  const loader = path === '/crear-qr' || path === '/mis-cartas' || path.startsWith('/sorpresa/') ? imports.love : path.startsWith('/regalos') || path === '/asistente' ? imports.catalog : path === '/studio' ? imports.studio : path === '/30-de-septiembre' ? imports.seasonal : path === '/admin' ? imports.admin : path === '/pagar-yape' ? imports.yape : imports.customer;
+  const loader = path.startsWith('/jardin-') ? imports.garden : path === '/crear-qr' || path === '/mis-cartas' || path.startsWith('/sorpresa/') ? imports.love : path.startsWith('/regalos') || path === '/asistente' ? imports.catalog : path === '/studio' ? imports.studio : path === '/30-de-septiembre' ? imports.seasonal : path === '/admin' ? imports.admin : path === '/pagar-yape' ? imports.yape : imports.customer;
   loader().catch(() => {});
 }
 async function start() {
@@ -35,6 +35,8 @@ async function renderRoute() {
   document.body.classList.remove('love-immersive');
   if (path === '/') { const data = await api<{ products: Product[] }>('/api/products?excludeOccasion=30%20de%20septiembre'); leavePage(); $('#contenido').innerHTML = homeHTML; document.title = 'KUYARI | Tu historia, hecha sorpresa'; $('#home-products').innerHTML = data.products.slice(0, 6).map(card).join('') || '<p class="empty-state">Nuestra colección está tomando forma. Vuelve pronto para encontrar tu próxima sorpresa.</p>'; }
   else if (path === '/30-de-septiembre') await (await import('./seasonal.js')).campaign();
+  else if (path === '/jardin-cartas') await (await import('./garden.js')).gardenLetters();
+  else if (path === '/jardin-flores') await (await import('./garden.js')).gardenFlowersPage();
   else if (path === '/crear-qr') await (await import('./love.js')).createLove();
   else if (path === '/mis-cartas') await (await import('./love.js')).myLoveCards();
   else if (path.startsWith('/sorpresa/')) await (await import('./love.js')).loveViewer(path.split('/')[2]);
@@ -57,7 +59,7 @@ async function renderRoute() {
   const footerContact = document.querySelector('#footer-contact'); if (footerContact) footerContact.innerHTML = contactLinks('Hola, KUYARI. Quisiera información sobre sus regalos.', true);
   positionSection();
 }
-function isPage(path: string) { return /^(?:\/$|\/(?:regalos(?:\/[a-z0-9-]+)?|studio|checkout|cuenta|recuperar|seguimiento|asistente|30-de-septiembre|crear-qr|mis-cartas|pagar-yape|admin|activar-admin)$|\/(?:pedido|recuerdo|sorpresa|politicas)\/[^/]+$)/.test(path); }
+function isPage(path: string) { return /^(?:\/$|\/(?:regalos(?:\/[a-z0-9-]+)?|jardin-cartas|jardin-flores|studio|checkout|cuenta|recuperar|seguimiento|asistente|30-de-septiembre|crear-qr|mis-cartas|pagar-yape|admin|activar-admin)$|\/(?:pedido|recuerdo|sorpresa|politicas)\/[^/]+$)/.test(path); }
 let navigating = false, queued: { url: URL; push: boolean } | undefined;
 async function navigate(url: URL, push = true) {
   if (navigating) { queued = { url, push }; return; }
