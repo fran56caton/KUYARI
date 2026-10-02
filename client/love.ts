@@ -35,7 +35,7 @@ export async function createLove() {
   let lastGiftId = '';
 
   function drawPreview() {
-    const c = read(); $('#love-book-builder').hidden = !isLoveBook(c); const suggestion = romanticBookIdea(value(form,'suggestTone') as RomanticTone,c.recipient,value(form,'suggestTrait'),value(form,'suggestMemory')); $('#love-book-suggestion').innerHTML = `<strong>${esc(suggestion.title)}</strong><p>${esc(suggestion.message)}</p>`; const display = { ...c, recipient: c.recipient || 'mi persona favorita', message: c.message || (ideas[c.occasion] || generic).message };
+    const c = read(); $('.love-preview-note').textContent = isLoveBook(c) ? 'Abre la portada y pasa las páginas. Los cambios se ven aquí.' : 'Toca el sobre y recorre tu historia. Los cambios se ven aquí.'; const openingOptions = form.querySelector<HTMLElement>('.love-opening-options')!; openingOptions.hidden = bookThemes.includes(c.theme); openingOptions.previousElementSibling!.textContent = bookThemes.includes(c.theme) ? 'Este libro se abre desde su portada.' : 'La primera sorpresa'; $('#love-book-builder').hidden = !isLoveBook(c); const suggestion = romanticBookIdea(value(form,'suggestTone') as RomanticTone,c.recipient,value(form,'suggestTrait'),value(form,'suggestMemory')); $('#love-book-suggestion').innerHTML = `<strong>${esc(suggestion.title)}</strong><p>${esc(suggestion.message)}</p>`; const display = { ...c, recipient: c.recipient || 'mi persona favorita', message: c.message || (ideas[c.occasion] || generic).message };
     if (dialog.open) return;
     if (!destroyInline?.update(display, assets)) { destroyInline?.(); destroyInline = mountLoveExperience(inline, display, assets); }
     $('#love-message-count').textContent = `${c.message.length} / 6000`;

@@ -27,7 +27,7 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   root.innerHTML = `<div class="love-stage palette-${c.palette} theme-${c.theme} ${c.details.includes('sparkle') ? 'has-opening-sparkle' : ''} text-${c.textStyle} intensity-${c.intensity}">${loveArt(c)}${loveParticles(c)}${['scrapbook','vinyl'].includes(c.theme)?'<div class="love-vinyl" aria-hidden="true"><span>KUYARI<br>♫</span></div>':''}<div class="love-stage-vignette"></div><button type="button" class="love-motion-toggle" aria-pressed="false">Pausar movimiento</button><button type="button" class="love-sound" aria-pressed="false" aria-label="Activar melodía de la sorpresa">♫ <span>Melodía</span></button><div class="love-music-panel" hidden></div><div class="love-intro"><p class="love-overline">KUYARI · UNA HISTORIA SOLO PARA TI</p><h2>${esc(c.recipient ? `Para ${c.recipient}.` : 'Para alguien muy especial.')}</h2><p>${esc(c.subtitle)}</p><button type="button" class="love-opening opening-${c.opening}" aria-label="Abrir esta sorpresa"><span class="love-envelope-flap"></span><span class="love-envelope-paper">${esc(c.recipient)}</span><span class="love-seal">♡</span><span class="love-book-mark">❦</span></button><p class="love-invitation">${c.opening === 'gates' ? 'Abre las puertas de nuestra historia' : c.opening === 'heart' ? 'Toca el corazón. Hay algo para ti.' : c.opening === 'book' ? 'Abre el primer capítulo de nuestra historia' : 'Toca el sobre. Lo escribí pensando en ti.'}</p><button class="love-open-text" type="button">Abrir mi sorpresa <span>↗</span></button></div><div class="love-content-panel" hidden><article class="love-paper" tabindex="-1"></article><nav class="love-story-nav" aria-label="Capítulos de la sorpresa"><button class="love-back" type="button" aria-label="Capítulo anterior">←</button><div class="love-story-progress" aria-live="polite"></div><button class="love-next" type="button">Siguiente →</button></nav></div><div class="love-stage-brand">Hecho con cariño · KUYARI</div></div>`;
   const stage = root.querySelector<HTMLElement>('.love-stage')!, intro = root.querySelector<HTMLElement>('.love-intro')!, panel = root.querySelector<HTMLElement>('.love-content-panel')!, paper = root.querySelector<HTMLElement>('.love-paper')!;
   if (book) {
-    stage.classList.add('book-experience', `book-style-${c.bookStyle}`);
+    stage.classList.add('book-experience', `book-style-${c.bookStyle}`, `book-photos-${c.photoStyle}`);
     root.querySelector('.love-opening')!.insertAdjacentHTML('beforeend', bookCover(c, assets));
     root.querySelector('.love-story-nav')!.insertAdjacentHTML('afterbegin', '<button type="button" class="book-contents-button" aria-label="Ir al índice del libro">Índice</button>');
     root.querySelector('.love-invitation')!.textContent = 'Abre el primer capítulo de nuestra historia';
@@ -69,7 +69,7 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
     pageAnimation?.cancel(); turningSheet?.remove(); turningSheet = undefined;
     paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause());
     const forward = index >= previousIndex;
-    const oldPage = book && animate && index !== previousIndex ? paper.querySelector<HTMLElement>(singleBook || !forward ? '.book-page' : '.book-page:last-child')?.cloneNode(true) as HTMLElement | undefined : undefined;
+    const oldPage = book && c.transition === 'page' && animate && index !== previousIndex ? paper.querySelector<HTMLElement>(singleBook || !forward ? '.book-page' : '.book-page:last-child')?.cloneNode(true) as HTMLElement | undefined : undefined;
     paper.innerHTML = screens[index].html; paper.scrollTop = 0;
     if (animate && !motionPaused && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       if (oldPage) {
@@ -77,7 +77,7 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
         pageAnimation=oldPage.animate([{transform:'perspective(1600px) rotateY(0deg)',opacity:1},{transform:`perspective(1600px) rotateY(${forward?-110:110}deg)`,opacity:0}],{duration:650,easing:'cubic-bezier(.25,.65,.25,1)',fill:'forwards'});
         pageAnimation.onfinish=()=>{oldPage.remove();if(turningSheet===oldPage)turningSheet=undefined;};
       } else {
-        const transform = book || c.transition === 'fade' ? 'none' : c.transition === 'zoom' ? 'scale(.92)' : c.transition === 'float' ? 'translateY(24px)' : 'translateY(25px) rotate(-2deg)';
+        const transform = c.transition === 'fade' ? 'none' : c.transition === 'zoom' ? 'scale(.92)' : c.transition === 'float' ? 'translateY(24px)' : book ? 'none' : 'translateY(25px) rotate(-2deg)';
         pageAnimation = paper.animate([{opacity:.4,transform},{opacity:1,transform:'none'}],{duration:book?350:c.transition==='fade'?420:600,easing:'ease-out',fill:'none'});
       }
     }
