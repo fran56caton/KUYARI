@@ -23,6 +23,10 @@ export class DB {
       this.connection.exec(readFileSync(resolve('migrations/003-inquiry-products.sql'), 'utf8'));
       this.run('INSERT INTO migrations VALUES (3,?)', new Date().toISOString());
     });
+    if (!this.get('SELECT version FROM migrations WHERE version=4')) this.transaction(() => {
+      this.connection.exec(readFileSync(resolve('migrations/004-love-cards.sql'), 'utf8'));
+      this.run('INSERT INTO migrations VALUES (4,?)', new Date().toISOString());
+    });
   }
   get<T = Record<string, unknown>>(sql: string, ...values: SQLInputValue[]): T | undefined { return this.connection.prepare(sql).get(...values) as T | undefined; }
   all<T = Record<string, unknown>>(sql: string, ...values: SQLInputValue[]): T[] { return this.connection.prepare(sql).all(...values) as T[]; }

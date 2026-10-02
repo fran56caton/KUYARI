@@ -3,7 +3,8 @@
   "buildCommand": "npm run build",
   "functions": {
     "api/index.ts": {
-      "includeFiles": "{migrations/**,assets/**,index.html,styles.css,dist/client/**,dist/shared/**}"
+      "includeFiles": "{cloud/schema.sql,dist/cloud/**,dist/shared/**,assets/**,index.html,styles.css,dist/client/**}",
+      "maxDuration": 60
     }
   },
   "rewrites": [
@@ -11,5 +12,7 @@
       "source": "/(.*)",
       "destination": "/api/index"
     }
-  ]
+  ],
+  "framework": null,
+  "outputDirectory": "public"
 }

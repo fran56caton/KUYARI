@@ -79,7 +79,7 @@ export async function admin() {
     inquiryToggle.onchange = updatePricing; updatePricing();
     let uploading = false;
     const imageInput = $<HTMLInputElement>('#product-upload'); imageInput.multiple = true;
-    imageInput.parentElement!.insertAdjacentHTML('beforebegin', '<p>Hasta 10 fotos por producto. JPG, PNG o WebP, máximo 8 MB cada una. La primera será la portada.</p><div id="photo-drop" class="photo-drop">Arrastra tus fotos aquí o selecciónalas abajo</div><p id="photo-status" role="status"></p>');
+    imageInput.parentElement!.insertAdjacentHTML('beforebegin', '<p>Hasta 10 fotos por producto. JPG, PNG o WebP, máximo 3 MB cada una. La primera será la portada.</p><div id="photo-drop" class="photo-drop">Arrastra tus fotos aquí o selecciónalas abajo</div><p id="photo-status" role="status"></p>');
     function syncImages() { const f = $<HTMLFormElement>('#editor'); images.forEach((im, n) => { im.alt = value(f, `imageAlt${n}`) || im.alt; }); }
     function showImages() {
       $('#product-images').innerHTML = images.map((im, n) => `<div class="image-edit"><img src="${esc(im.url)}" alt="${esc(im.alt)}" width="100" height="100"><div>${n === 0 ? '<span class="eyebrow">Foto de portada</span>' : ''}${field(`imageAlt${n}`, 'Descripción de imagen', im.alt)}${n ? `<button type="button" data-cover="${n}" class="text-button">Usar como portada</button>` : ''}<button type="button" data-remove-image="${n}" class="text-button">Quitar</button></div></div>`).join('');
@@ -91,6 +91,7 @@ export async function admin() {
     async function uploadPhotos(files: File[]) {
       if (uploading || !files.length) return;
       if (images.length + files.length > 10) { fail(new Error('Puedes añadir hasta 10 fotos por producto')); return; }
+      if (files.some(file => file.size > 3 * 1024 * 1024)) { fail(new Error('Cada foto admite hasta 3 MB. Elige una imagen más pequeña.')); return; }
       uploading = true; imageInput.disabled = true; const submit = $<HTMLButtonElement>('#editor button[type=submit]'); submit.disabled = true;
       try { syncImages(); for (const [n, file] of files.entries()) {
         $('#photo-status').textContent = `Guardando foto ${n + 1} de ${files.length}…`;

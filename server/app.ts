@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import QRCode from 'qrcode';
+import { registerRomance, romanceAssetReadable } from './romance.js';
 import type { Config } from './config.js';
 import { paymentReady } from './config.js';
 import type { DB } from './db.js';
@@ -35,6 +36,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
   const limiter = (limit: number, minutes = 15) => rateLimit({ windowMs: minutes * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo' } });
   app.get('/assets/september.css', (_req, res) => res.sendFile(resolve('assets/september.css')));
+  app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
   app.get('/health', (_req, res) => { db.get('SELECT 1'); res.json({ status: 'ok' }); });
   app.post('/api/payments/webhook', limiter(600), async (req, res) => {
     const dataId = z.string().regex(/^\d{1,32}$/).parse(req.query['data.id']);
@@ -46,6 +48,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     res.json({ received: true });
   });
   app.use('/api', limiter(900), sessions(db, config), csrfGuard(config));
+  registerRomance(app, db, config, limiter);
   app.get('/api/session', (_req, res) => res.json({ csrf: res.locals.session.csrf, user: res.locals.session.user }));
   app.get('/api/store', (_req, res) => res.json({ name: 'KUYARI', currency: 'PEN', environment: config.NODE_ENV, orderChannel: config.ORDER_CHANNEL, whatsapp: [config.WHATSAPP_PRIMARY, config.WHATSAPP_SECONDARY], hasDemoProducts: Boolean(db.get('SELECT id FROM products WHERE demo=1 AND active=1 LIMIT 1')), paymentMode: config.PAYMENT_MODE, paymentReady: config.ORDER_CHANNEL === 'online' && paymentReady(config), storeLive: config.STORE_LIVE === 'true', businessName: config.BUSINESS_NAME, businessEmail: config.BUSINESS_EMAIL, zones: zones(db), categories: db.all('SELECT * FROM categories WHERE active=1') }));
   app.get('/api/products', (req, res) => {
@@ -209,7 +212,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     if (!a) throw new HttpError(404, 'Archivo no encontrado');
     const owned = a.session_id === res.locals.session.id || (a.user_id && a.user_id === res.locals.session.userId);
     const memories = db.all<Memory>('SELECT m.* FROM digital_memories m JOIN memory_assets ma ON ma.memory_id=m.id WHERE ma.asset_id=?', a.id);
-    if (!owned && !memories.some(m => memoryReadable(m, res))) throw new HttpError(404, 'Archivo no encontrado');
+    if (!owned && !memories.some(m => memoryReadable(m, res)) && !await romanceAssetReadable(db, a.id, res.locals.session)) throw new HttpError(404, 'Archivo no encontrado');
     res.type(a.mime).set('Content-Disposition', 'inline').send(await storage.get(a.storage_key));
   });
   app.get('/media/products/:id', async (req, res) => {
@@ -266,13 +269,13 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.use('/src', express.static(resolve('dist/client'), { maxAge: config.NODE_ENV === 'production' ? '1h' : 0, dotfiles: 'deny' }));
   app.use('/shared', express.static(resolve('dist/shared'), { maxAge: '1h', dotfiles: 'deny' }));
   app.get('/styles.css', (_req, res) => res.sendFile(resolve('styles.css')));
-  app.get('/robots.txt', (_req, res) => res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cuenta\nDisallow: /checkout\nDisallow: /pedido/\nDisallow: /recuerdo/\nDisallow: /api/\nSitemap: ${config.APP_URL}/sitemap.xml`));
+  app.get('/robots.txt', (_req, res) => res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cuenta\nDisallow: /checkout\nDisallow: /pedido/\nDisallow: /recuerdo/\nDisallow: /sorpresa/\nDisallow: /mis-cartas\nDisallow: /api/\nSitemap: ${config.APP_URL}/sitemap.xml`));
   app.get('/sitemap.xml', (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/30-de-septiembre', ...products(db).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
-  app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
+  app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
     let title = 'KUYARI | Tu historia, hecha sorpresa', description = 'Regalos personalizados, flores y recuerdos digitales. Crea una sorpresa que cuente tu historia.', status = 200;
     if (req.path === '/30-de-septiembre') { title = '30 de septiembre: carritos y flores azules | KUYARI'; description = 'Encuentra tu detalle: ramos de carritos, flores azules y cajas sorpresa. Personaliza tu propuesta y consulta por WhatsApp.'; }
     if (req.path.startsWith('/regalos/')) { const p = products(db).find(p => req.path === `/regalos/${p.slug}`); if (p) { title = `${p.name} | KUYARI`; description = p.summary; } else status = 404; }
-    if (/^\/(pedido|recuerdo|admin|activar-admin|cuenta|checkout|recuperar)/.test(req.path)) res.set('X-Robots-Tag', 'noindex, nofollow');
+    if (/^\/(pedido|recuerdo|sorpresa|mis-cartas|crear-qr|admin|activar-admin|cuenta|checkout|recuperar)/.test(req.path)) res.set('X-Robots-Tag', 'noindex, nofollow');
     let html = await readFile(resolve('index.html'), 'utf8');
     html = html.replace('<title>KUYARI | Tu historia, hecha sorpresa</title>', `<title>${escape(title)}</title>`).replace('<!--seo-->', `<meta name="description" content="${escape(description)}"><link rel="canonical" href="${escape(config.APP_URL + req.path)}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:type" content="website"><meta property="og:url" content="${escape(config.APP_URL + req.path)}"><meta property="og:image" content="${config.APP_URL}/assets/web/ramo-kuyari.webp"><meta name="twitter:card" content="summary_large_image">`);
     res.status(status).type('html').set('Cache-Control', 'no-cache').send(html);

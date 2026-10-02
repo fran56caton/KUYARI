@@ -1,0 +1,3 @@
+CREATE TABLE love_cards (id TEXT PRIMARY KEY, public_token TEXT NOT NULL UNIQUE, session_id TEXT NOT NULL, user_id TEXT REFERENCES users(id), content TEXT NOT NULL, privacy TEXT NOT NULL CHECK(privacy IN ('link','pin')), pin_hash TEXT, access_hash TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, request_key TEXT NOT NULL, request_hash TEXT NOT NULL, UNIQUE(session_id,request_key));
+CREATE INDEX love_cards_owner ON love_cards(user_id,session_id,created_at);
+CREATE TABLE love_access (session_id TEXT NOT NULL, card_id TEXT NOT NULL REFERENCES love_cards(id), expires_at INTEGER NOT NULL, PRIMARY KEY(session_id,card_id));

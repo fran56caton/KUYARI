@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "build": "tsc && node scripts/build.mjs",
+    "build": "tsc && node scripts/build.mjs && node scripts/build-vercel.mjs",
     "migrate": "node --env-file-if-exists=.env scripts/manage.mjs migrate",
     "seed:demo": "node --env-file-if-exists=.env scripts/manage.mjs seed",
     "admin:create": "node --env-file-if-exists=.env scripts/manage.mjs admin",

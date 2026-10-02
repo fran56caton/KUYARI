@@ -29,6 +29,7 @@ export function rotateSession(db: DB, config: Config, res: Response, user: User 
     db.run('INSERT OR IGNORE INTO session_orders SELECT ?,order_id FROM session_orders WHERE session_id=?', fresh.id, old.id);
     db.run('UPDATE orders SET user_id=? WHERE user_id IS NULL AND id IN (SELECT order_id FROM session_orders WHERE session_id=?)', user.id, old.id);
     db.run('UPDATE assets SET session_id=?,user_id=? WHERE session_id=?', fresh.id, user.id, old.id);
+    db.run('UPDATE love_cards SET session_id=?,user_id=COALESCE(user_id,?) WHERE session_id=?', fresh.id, user.id, old.id);
   }
   db.run('DELETE FROM sessions WHERE id=?', old.id);
   res.locals.session = fresh;
