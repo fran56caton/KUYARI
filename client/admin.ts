@@ -2,6 +2,7 @@ import type { Product, Zone, OrderStatus } from '../shared/models.js';
 import { statusLabels } from '../shared/models.js';
 import { $, api, state, esc, money, page, field, area, select, check, checked, errorBox, onForm, value, toast, fail } from './ui.js';
 import { orderBody, memoryLinks, type Order } from './customer.js';
+import { yapeAdmin } from './yape.js';
 interface Dashboard { metrics: { revenue: number; orders: number; average: number; pending: number }; topProducts: { name: string; units: number }[]; recent: { code: string; status: OrderStatus; total: number }[]; unsentEmails: { count: number }; services: { payment: boolean; email: boolean; storage: boolean; live: boolean } }
 type Category = { id: string; name: string; slug: string; active: number };
 type Coupon = { id: string; code: string; kind: string; value: number; starts_at: string; ends_at: string; minimum: number; usage_limit: number; per_user: number; active: number };
@@ -11,15 +12,15 @@ export async function admin() {
   if (!state.user) { location.href = '/cuenta?next=admin'; return; }
   if (state.user.role === 'customer') { page('Acceso reservado.', '<p>Esta sección está disponible únicamente para el equipo de KUYARI.</p><a href="/cuenta">Volver a mi cuenta</a>'); return; }
   const isAdmin = state.user.role === 'admin';
-  const tabs = [['dashboard', 'Resumen'], ['orders', 'Pedidos'], ['products', 'Productos'], ['customers', 'Clientes'], ['memories', 'Recuerdos'], ...(isAdmin ? [['categories', 'Categorías'], ['zones', 'Entregas'], ['coupons', 'Cupones'], ['policies', 'Políticas'], ['users', 'Equipo'], ['audit', 'Actividad']] : [])];
+  const tabs = [['dashboard', 'Resumen'], ['orders', 'Pedidos'], ['products', 'Productos'], ['customers', 'Clientes'], ['memories', 'Recuerdos'], ...(isAdmin ? [['yape', 'Yape'], ['categories', 'Categorías'], ['zones', 'Entregas'], ['coupons', 'Cupones'], ['policies', 'Políticas'], ['users', 'Equipo'], ['audit', 'Actividad']] : [])];
   page('El taller de KUYARI.', `<p>Hola, ${esc(state.user.name)}. Aquí se preparan las próximas historias.</p><nav class="admin-tabs" aria-label="Administración">${tabs.map(([id, label]) => `<button type="button" data-tab="${id}" class="btn btn-outline">${label}</button>`).join('')}</nav>${errorBox}<div id="admin-content" aria-live="polite"></div>`, 'ADMINISTRACIÓN');
   const root = $('#admin-content');
   const formShell = (title: string, form: string) => `<h2>${esc(title)}</h2><form id="editor" class="admin-editor">${form}${errorBox}<button class="btn btn-primary" type="submit">Guardar</button><button class="btn btn-outline" type="button" id="cancel-edit">Volver</button></form>`;
   function back(tab: string) { $('#cancel-edit').onclick = run(() => load(tab)); }
   async function load(tab: string) {
-    root.innerHTML = '<p role="status">Cargando…</p>';
     document.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach(b => { b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'); });
-    if (tab === 'dashboard') {
+    if (tab === 'yape') { await yapeAdmin(root); }
+    else if (tab === 'dashboard') {
       const d = await api<Dashboard>('/api/admin/dashboard');
       root.innerHTML = `<div class="metrics"><div><span>Ventas aprobadas</span><strong>${money(d.metrics.revenue)}</strong></div><div><span>Pedidos</span><strong>${d.metrics.orders}</strong></div><div><span>Ticket promedio</span><strong>${money(d.metrics.average)}</strong></div><div><span>Por confirmar</span><strong>${d.metrics.pending}</strong></div></div><h2>Operación</h2><ul><li>Pagos: ${d.services.payment ? 'Configurados' : 'Pendientes de configurar'}</li><li>Correo: ${d.services.email ? 'Configurado' : 'Pendiente de configurar'}</li><li>Almacenamiento de producción: ${d.services.storage ? 'Configurado' : 'Pendiente de configurar'}</li><li>Tienda comercial: ${d.services.live ? 'Habilitada' : 'Cerrada al público'}</li><li>Correos en cola: ${d.unsentEmails.count}</li></ul>${isAdmin && d.unsentEmails.count ? '<button id="retry-emails" class="btn btn-outline">Reintentar correos pendientes</button>' : ''}<h2>Más vendidos</h2>${d.topProducts.length ? d.topProducts.map(p => `<p>${esc(p.name)} · ${p.units} unidades</p>`).join('') : '<p>Aún no hay ventas aprobadas.</p>'}<h2>Pedidos recientes</h2>${d.recent.map(o => `<p><button class="text-button" data-order="${esc(o.code)}">${esc(o.code)}</button> · ${esc(statusLabels[o.status])} · ${money(o.total)}</p>`).join('') || '<p>No hay pedidos todavía.</p>'}`;
       document.querySelectorAll<HTMLButtonElement>('[data-order]').forEach(b => b.onclick = run(() => editOrder(b.dataset.order!)));

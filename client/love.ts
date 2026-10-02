@@ -1,6 +1,6 @@
 import { defaultLoveContent, loveThemes, lovePalettes, loveOccasions, loveDetails, type LoveContent, type LoveRecord } from '../shared/romance.js';
 import type { Product } from '../shared/models.js';
-import { $, api, state, page, esc, area, field, select, errorBox, value, checked, fail, ApiError, onForm, toast } from './ui.js';
+import { $, api, state, page, esc, area, field, select, errorBox, value, checked, fail, ApiError, onForm, toast, onPageLeave } from './ui.js';
 import { loveArt } from './love-art.js';
 import { mountLoveExperience, type LoveAsset, type LoveExperience } from './love-experience.js';
 import { phoneLabel } from './contact.js';
@@ -114,6 +114,7 @@ export async function createLove() {
   if (chosenGift) $<HTMLSelectElement>('[name="giftId"]').value = chosenGift.id;
   drawPreview();
   go(0);
+  onPageLeave(() => { clearTimeout(dirtyTimer); destroyInline?.(); destroyModal?.(); });
   if (chosenGift || params.get('acompanar') === 'regalo') {
     if (chosenGift) toast('Tu carta acompañará a ' + chosenGift.name + '. Puedes cambiar el regalo.');
     $<HTMLSelectElement>('[name="giftId"]').focus({ preventScroll: true });
@@ -144,7 +145,7 @@ export async function loveViewer(token: string) {
   page('Una sorpresa para ti.', `<div class="love-full-experience" id="love-viewer"></div>${record.owner ? '<a class="love-view-owner" href="/mis-cartas">Mis cartas ↗</a>' : ''}`, 'KUYARI');
   document.body.classList.add('love-immersive');
   document.title = `Una sorpresa para ${record.content.recipient} | KUYARI`;
-  mountLoveExperience($('#love-viewer'), record.content, record.assets);
+  onPageLeave(mountLoveExperience($('#love-viewer'), record.content, record.assets));
   if (!record.active) toast('Vista del creador: este enlace está desactivado para otras personas.');
 }
 export async function myLoveCards() {

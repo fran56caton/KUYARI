@@ -13,6 +13,9 @@ export async function api<T>(path: string, method = 'GET', body?: unknown): Prom
   return data as T;
 }
 let toastTimer: ReturnType<typeof setTimeout>;
+let pageCleanup: (() => void) | undefined;
+export function onPageLeave(cleanup: () => void) { pageCleanup = cleanup; }
+export function leavePage() { const cleanup = pageCleanup; pageCleanup = undefined; cleanup?.(); }
 export function toast(message: string) { const el = $('#toast'); el.textContent = message; el.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 6000); }
 export function fail(error: unknown, root: ParentNode = document) { const el = root.querySelector<HTMLElement>('[data-error]'); const message = error instanceof Error ? error.message : 'No pudimos completar la operación'; if (el) { el.textContent = message; el.hidden = false; el.focus(); } else toast(message); }
 export function onForm(id: string, action: (form: HTMLFormElement) => Promise<void>) {
@@ -26,7 +29,7 @@ export const field = (name: string, label: string, v = '', type = 'text', requir
 export const area = (name: string, label: string, v = '', max = 1000) => `<label class="field">${esc(label)}<textarea name="${esc(name)}" maxlength="${max}" rows="4">${esc(v)}</textarea></label>`;
 export const select = (name: string, label: string, options: { value: string; label: string }[], selected = '', required = true) => `<label class="field">${esc(label)}<select name="${esc(name)}" ${required ? 'required' : ''}>${options.map(o => `<option value="${esc(o.value)}" ${o.value === selected ? 'selected' : ''}>${esc(o.label)}</option>`).join('')}</select></label>`;
 export const check = (name: string, label: string, enabled = false) => `<label class="check-option"><input name="${esc(name)}" type="checkbox" ${enabled ? 'checked' : ''}>${esc(label)}</label>`;
-export function page(title: string, body: string, eyebrow = 'KUYARI · TU HISTORIA') { $('#contenido').innerHTML = `<section class="section"><div class="container"><p class="eyebrow">${esc(eyebrow)}</p><h1 class="page-title">${esc(title)}</h1>${body}</div></section>`; document.title = `${title} | KUYARI`; }
+export function page(title: string, body: string, eyebrow = 'KUYARI · TU HISTORIA') { leavePage(); $('#contenido').innerHTML = `<section class="section"><div class="container"><p class="eyebrow">${esc(eyebrow)}</p><h1 class="page-title">${esc(title)}</h1>${body}</div></section>`; document.title = `${title} | KUYARI`; }
 export const card = (p: Product) => `<article class="product-card"><a href="/regalos/${esc(p.slug)}"><div class="product-image"><img src="${esc(p.images[0]?.url)}" alt="${esc(p.images[0]?.alt)}" loading="lazy" width="600" height="600">${p.inquiryOnly ? '<span class="product-label season-label">A tu medida</span>' : p.promo ? '<span class="product-label">Precio especial</span>' : ''}</div><div class="product-body"><p class="eyebrow">${esc(p.category)}</p><h3>${esc(p.name)}</h3><p>${esc(p.summary)}</p><div class="product-bottom"><strong>${p.inquiryOnly ? 'Consultar precio' : money(p.promo ?? p.price)}</strong><span>${p.inquiryOnly ? 'Personalizar ↗' : p.stock ? 'Descubrir ↗' : 'Agotado'}</span></div></div></a></article>`;
 export function analytics(event: string, details: Record<string, string | number> = {}) { try { window.dispatchEvent(new CustomEvent('kuyari:analytics', { detail: { event, ...details } })); } catch { /* Analytics is optional; commerce never waits for it. */ } }
 export const emptyCustomization = (): Customization => ({ occasion: '', style: '', color: '', message: '', card: true, memory: false, dedication: '', sender: '', recipient: '', songUrl: '', videoUrl: '', specialDate: '', privacy: 'link', pin: '', assets: [] });

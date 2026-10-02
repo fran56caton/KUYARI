@@ -36,6 +36,7 @@ export async function order(code: string) {
     $('#payment-action').innerHTML = `<div class="whatsapp-order"><h3>Ahora coordinemos tu sorpresa.</h3><p>Tu pedido ya está guardado. Envíanos el resumen a uno de estos números para confirmar disponibilidad y entrega.</p>${w.contacts.map((c, n) => `<a class="btn ${n ? 'btn-outline' : 'btn-whatsapp'} full-width" href="${esc(c.url)}" target="_blank" rel="noopener noreferrer"><span>Enviar pedido por WhatsApp<small>${phoneLabel(c.phone)}</small></span></a>`).join('')}<details><summary>Ver el mensaje que enviaré</summary><pre class="whatsapp-message">${esc(w.message)}</pre></details><p class="fine-print">No se ha realizado ningún cobro. Abrir WhatsApp no confirma automáticamente el pedido; KUYARI lo revisará contigo.</p></div>`;
   }
   if (o.paymentStatus === 'approved') { const key = `purchase:${o.code}`; if (!sessionStorage.getItem(key)) { analytics('purchase', { orderId: o.code, total: o.total }); sessionStorage.setItem(key, '1'); } }
+  if (o.channel === 'whatsapp' && o.paymentStatus !== 'approved' && !['cancelled', 'refunded'].includes(o.status)) $('#payment-action').insertAdjacentHTML('beforeend', `<a class="btn btn-primary full-width" href="/pagar-yape?pedido=${encodeURIComponent(o.code)}">Pagar o reportar mi Yape</a><p class="fine-print">Confirma primero el pedido y el importe con KUYARI.</p>`);
   $('#refresh-order').onclick = () => { order(code).catch(fail); };
 }
 export function tracking(code = '') {
