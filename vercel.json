@@ -3,17 +3,13 @@
   "buildCommand": "npm run build",
   "functions": {
     "api/index.ts": {
-      "includeFiles": [
-        "migrations/**",
-        "assets/**",
-        "index.html",
-        "styles.css",
-        "dist/client/**",
-        "dist/shared/**"
-      ]
+      "includeFiles": "{migrations/**,assets/**,index.html,styles.css,dist/client/**,dist/shared/**}"
     }
   },
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index" }
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
   ]
 }
