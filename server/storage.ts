@@ -14,7 +14,7 @@ export class Storage {
   }
   async put(bytes: Buffer, imageOnly = false) {
     const type = await fileTypeFromBuffer(bytes);
-    const allowed = imageOnly ? ['image/jpeg', 'image/png', 'image/webp'] : ['image/jpeg', 'image/png', 'image/webp', 'video/mp4'];
+    const allowed = imageOnly ? ['image/jpeg', 'image/png', 'image/webp'] : ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'audio/mpeg'];
     if (!type || !allowed.includes(type.mime) || bytes.length > (type.mime === 'video/mp4' ? 25 : 8) * 1024 * 1024) throw new HttpError(400, 'Archivo no permitido. Usa JPG, PNG o WebP de hasta 8 MB, o MP4 de hasta 25 MB');
     let mime = type.mime, ext = type.ext;
     if (mime.startsWith('image/')) {
@@ -31,8 +31,9 @@ export class Storage {
     return { key, mime, size: bytes.length };
   }
   async get(key: string): Promise<Buffer> {
-    if (!/^[a-f0-9-]{36}\.(?:jpg|png|webp|mp4)$/.test(key)) throw new HttpError(404, 'Archivo no encontrado');
+    if (!/^[a-f0-9-]{36}\.(?:jpg|png|webp|mp4|mp3)$/.test(key)) throw new HttpError(404, 'Archivo no encontrado');
     if (this.client) { const r = await this.client.send(new GetObjectCommand({ Bucket: this.config.S3_BUCKET, Key: key })); if (!r.Body) throw new HttpError(404, 'Archivo no encontrado'); return Buffer.from(await r.Body.transformToByteArray()); }
     return readFile(resolve(this.config.UPLOAD_DIR, key));
   }
 }
+

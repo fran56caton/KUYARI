@@ -16,10 +16,12 @@ const short = z.string().trim().max(180);
 const url = z.string().max(1000).refine(v => !v || (() => { try { const u = new URL(v); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; } })(), 'Usa un enlace HTTPS').default('');
 const contentSchema = z.object({
   theme: z.enum(loveThemes.map(t => t.id)), palette: z.enum(lovePalettes.map(t => t.id)), occasion: z.enum(loveOccasions),
-  opening: z.enum(['envelope', 'heart', 'gates', 'book']), flower: z.enum(['roses', 'daisies', 'blue', 'peonies']),
+  opening: z.enum(['envelope', 'heart', 'gates', 'book']), flower: z.enum(['roses', 'daisies', 'blue', 'peonies', 'tulips', 'lilies']),
+  transition: z.enum(['page','fade','zoom','float']).default('page'), photoStyle: z.enum(['polaroid','gallery','filmstrip']).default('polaroid'),
+  musicMode: z.enum(['melody','favorite','off']).default('melody'), secretMessage: z.string().trim().max(600).default(''),
   recipient: short.min(1), sender: short, title: short.min(2), subtitle: short, message: z.string().trim().min(10).max(6000),
   closing: z.string().trim().max(600), specialDate: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/),
-  details: z.array(z.enum(loveDetails.map(d => d.id))).max(12), intensity: z.enum(['gentle', 'full']), textStyle: z.enum(['serif', 'handwritten']),
+  details: z.array(z.enum(loveDetails.map(d => d.id))).max(18), intensity: z.enum(['gentle', 'full']), textStyle: z.enum(['serif', 'handwritten']),
   chapters: z.array(z.object({ title: short.min(1), text: z.string().trim().min(1).max(1000) })).max(5),
   promises: z.array(z.string().trim().min(1).max(300)).max(6), songUrl: url, videoUrl: url,
   assets: z.array(z.uuid()).max(10), giftId: z.string().max(100), giftNote: z.string().trim().max(1000)
@@ -39,11 +41,17 @@ export async function romanceAssetReadable(db: LoveDB, assetId: string, s: Sessi
 }
 export async function heartQR(url: string, name = 'Una sorpresa para ti', palette = 'rose') {
   const qr = QRCode.create(url, { errorCorrectionLevel: 'H' });
-  const size = qr.modules.size, cell = 260 / (size + 8), offset = 170 + 4 * cell;
-  const paths: string[] = [];
-  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (qr.modules.get(y, x)) paths.push(`<rect x="${(offset + x * cell).toFixed(3)}" y="${(200 + 4 * cell + y * cell).toFixed(3)}" width="${(cell + 0.015).toFixed(3)}" height="${(cell + 0.015).toFixed(3)}"/>`);
-  const color = palette === 'sky' ? '#375e87' : palette === 'lilac' ? '#66517e' : '#5a183d';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="650" viewBox="0 0 600 650" role="img"><title>QR KUYARI para ${esc(name)}</title><defs><linearGradient id="heart" x2="1" y2="1"><stop stop-color="#fff3f6"/><stop offset="1" stop-color="#efb5c5"/></linearGradient></defs><rect width="600" height="650" rx="26" fill="#fffdfb"/><path d="M300 557C251 522 51 390 51 211C51 74 222 62 300 151C378 62 549 74 549 211C549 390 349 522 300 557Z" fill="url(#heart)" stroke="${color}" stroke-width="2"/><path d="M300 540C244 494 69 374 69 209C69 95 219 82 300 174C381 82 531 95 531 209C531 374 356 494 300 540Z" fill="none" stroke="#fffdfb" stroke-width="2"/><g fill="${color}" opacity=".65"><path d="M101 230q-34-20-28-54q26 4 28 30q2-26 28-30q6 34-28 54Z"/><path d="M499 230q-34-20-28-54q26 4 28 30q2-26 28-30q6 34-28 54Z"/><path d="M135 387q-16-4-22-18q15-9 28 3q-7-24 10-34q14 13 0 34q21-10 32 5q-11 18-30 10Z"/><path d="M465 387q-16-4-22-18q15-9 28 3q-7-24 10-34q14 13 0 34q21-10 32 5q-11 18-30 10Z"/></g><text x="300" y="181" text-anchor="middle" font-family="Georgia,serif" font-size="17" fill="${color}">KUYARI · HECHO CON AMOR</text><rect x="166" y="196" width="268" height="268" rx="4" fill="white"/><g fill="#20151c">${paths.join('')}</g><text x="300" y="493" text-anchor="middle" font-family="Georgia,serif" font-style="italic" font-size="18" fill="${color}">Abre una historia solo para ti</text><text x="300" y="599" text-anchor="middle" font-family="Georgia,serif" font-size="21" fill="${color}">${esc(name.slice(0, 35))}</text><text x="300" y="627" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#71656a">ESCANEA EL CORAZÓN Y DESCUBRE TU SORPRESA</text></svg>`;
+  const size = qr.modules.size, cell = 276 / (size + 8), left = 162, top = 125;
+  const color = ['sky','midnight'].includes(palette) ? '#234b78' : palette === 'sage' ? '#284b39' : palette === 'lilac' ? '#513569' : '#801c50';
+  const paths: string[] = [], dots: string[] = [];
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) if (qr.modules.get(y, x)) paths.push(`<rect x="${(left + (x + 4) * cell).toFixed(3)}" y="${(top + (y + 4) * cell).toFixed(3)}" width="${cell.toFixed(3)}" height="${cell.toFixed(3)}"/>`);
+  // Decoration stays outside all four quiet zones; the complete encoded matrix is preserved.
+  for (let y = 20; y < 540; y += 8) for (let x = 20; x < 580; x += 8) {
+    const nx = (x - 300) / 215, ny = (302 - y) / 205;
+    const inside = Math.pow(nx*nx + ny*ny - 1, 3) - nx*nx*ny*ny*ny <= 0;
+    if (inside && !(x >= left-8 && x <= left+284 && y >= top-8 && y <= top+284)) dots.push(`<circle cx="${x}" cy="${y}" r="${(x+y)%24 === 0 ? 2.5 : 2}"/>`);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="650" viewBox="0 0 600 650" role="img"><title>QR KUYARI ${esc(name)} · corazón de puntos</title><rect width="600" height="650" rx="24" fill="white"/><g data-heart-decoration="true" fill="${color}">${dots.join('')}</g><rect data-quiet-zone="4" x="${left}" y="${top}" width="276" height="276" fill="white"/><g data-qr-matrix="${size}" fill="${color}">${paths.join('')}</g><text x="300" y="565" text-anchor="middle" font-family="Georgia,serif" font-size="16" fill="${color}">KUYARI · TU HISTORIA, HECHA SORPRESA</text><text x="300" y="602" text-anchor="middle" font-family="Georgia,serif" font-size="21" fill="${color}">${esc(name.slice(0,35))}</text><text x="300" y="630" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#685965">ESCANEA EL CORAZÓN Y ABRE TU SORPRESA</text></svg>`;
 }
 export function registerRomance(app: Express, db: LoveDB, config: Config, limit: (count: number) => RequestHandler) {
   const getRow = async (value: string) => {
@@ -105,3 +113,4 @@ export function registerRomance(app: Express, db: LoveDB, config: Config, limit:
     const c = JSON.parse(row.content); res.type('image/svg+xml').set('Content-Disposition', 'attachment; filename="KUYARI-corazon.svg"').send(await heartQR(`${config.APP_URL}/sorpresa/${row.public_token}`, `Para ${c.recipient}`, c.palette));
   });
 }
+

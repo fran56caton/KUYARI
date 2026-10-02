@@ -30,7 +30,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.disable('x-powered-by');
   if (config.TRUST_PROXY === 'true') app.set('trust proxy', 1);
   app.use(helmet({ contentSecurityPolicy: { directives: {
-    defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], imgSrc: ["'self'", 'blob:'], mediaSrc: ["'self'"], connectSrc: ["'self'"], objectSrc: ["'none'"], frameAncestors: ["'none'"], formAction: ["'self'"], ...(config.NODE_ENV !== 'production' ? { upgradeInsecureRequests: null } : {})
+    defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], imgSrc: ["'self'", 'blob:'], mediaSrc: ["'self'", 'https:'], connectSrc: ["'self'"], objectSrc: ["'none'"], frameAncestors: ["'none'"], formAction: ["'self'"], ...(config.NODE_ENV !== 'production' ? { upgradeInsecureRequests: null } : {})
   } }, referrerPolicy: { policy: 'no-referrer' }, strictTransportSecurity: config.NODE_ENV === 'production' ? { maxAge: 31536000 } : false }));
   app.use(express.json({ limit: '100kb', strict: true }));
   app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
@@ -291,3 +291,4 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   });
   return app;
 }
+

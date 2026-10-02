@@ -10,11 +10,18 @@ export const loveThemes = [
   { id: 'ocean', name: 'Hasta el infinito', line: 'Un mar tranquilo, un amor inmenso.', symbol: '≈' },
   { id: 'enchanted', name: 'Bosque encantado', line: 'Luces diminutas, flores y magia.', symbol: '♧' },
   { id: 'royal', name: 'Un amor de leyenda', line: 'Un palacio entre rosas y oro.', symbol: '♛' },
-  { id: 'letters', name: 'Cartas que se quedan', line: 'Papel, tinta y palabras que abrazan.', symbol: '♡' }
+  { id: 'letters', name: 'Cartas que se quedan', line: 'Papel, tinta y palabras que abrazan.', symbol: '♡' },
+  { id: 'floral-heart', name: 'Un corazón de flores', line: 'Una corona de rosas para abrir tu corazón.', symbol: '❥' },
+  { id: 'pink-clouds', name: 'Entre nubes rosas', line: 'Nubes, una luna y un secreto solo para ustedes.', symbol: '☁' },
+  { id: 'flower-wall', name: 'Mil flores para ti', line: 'Una explosión de flores que guarda tus palabras.', symbol: '✿' },
+  { id: 'scrapbook', name: 'Nuestro álbum vintage', line: 'Papel antiguo, fotos y recuerdos para descubrir.', symbol: '▧' },
+  { id: 'vinyl', name: 'La canción de nosotros', line: 'Un disco, nuestra canción y una carta inolvidable.', symbol: '♫' },
+  { id: 'aurora', name: 'Aurora de amor', line: 'Un cielo de luz, estrellas y colores que abrazan.', symbol: '✺' }
 ] as const;
 export const lovePalettes = [
   { id: 'rose', name: 'Rosa antiguo' }, { id: 'wine', name: 'Vino y oro' },
-  { id: 'sky', name: 'Azul cielo' }, { id: 'lilac', name: 'Lavanda' }, { id: 'ivory', name: 'Marfil y oro' }
+  { id: 'sky', name: 'Azul cielo' }, { id: 'lilac', name: 'Lavanda' }, { id: 'ivory', name: 'Marfil y oro' },
+  { id: 'blush', name: 'Rosa de ensueño' }, { id: 'peach', name: 'Durazno y crema' }, { id: 'sage', name: 'Jardín de salvia' }, { id: 'midnight', name: 'Noche azul' }
 ] as const;
 export const loveOccasions = ['Porque te amo', 'Aniversario', 'Cumpleaños', 'San Valentín', 'Gracias', 'Una disculpa', 'Amor a distancia', '¿Te casas conmigo?', 'Para mamá', 'Amistad', 'Un logro especial', 'Porque sí'];
 export const loveDetails = [
@@ -23,11 +30,14 @@ export const loveDetails = [
   { id: 'fireflies', name: 'Luciérnagas' }, { id: 'ribbons', name: 'Lazos de seda' },
   { id: 'pearls', name: 'Perlas y joyas' }, { id: 'confetti', name: 'Confeti de celebración' },
   { id: 'vines', name: 'Enredaderas florales' }, { id: 'moon', name: 'Luna luminosa' },
-  { id: 'sparkle', name: 'Brillo al abrir' }, { id: 'bouquet', name: 'Ramo ilustrado' }
+  { id: 'sparkle', name: 'Brillo al abrir' }, { id: 'bouquet', name: 'Ramo ilustrado' },
+  { id: 'clouds', name: 'Nubes de algodón' }, { id: 'floralHeart', name: 'Corazón de flores' }, { id: 'shootingStars', name: 'Estrellas viajeras' },
+  { id: 'bubbles', name: 'Burbujas de luz' }, { id: 'balloons', name: 'Globos de corazón' }, { id: 'lace', name: 'Encaje delicado' }
 ] as const;
 export interface LoveContent {
   theme: typeof loveThemes[number]['id']; palette: typeof lovePalettes[number]['id']; occasion: string;
-  opening: 'envelope' | 'heart' | 'gates' | 'book'; flower: 'roses' | 'daisies' | 'blue' | 'peonies';
+  opening: 'envelope' | 'heart' | 'gates' | 'book'; flower: 'roses' | 'daisies' | 'blue' | 'peonies' | 'tulips' | 'lilies';
+  transition: 'page' | 'fade' | 'zoom' | 'float'; photoStyle: 'polaroid' | 'gallery' | 'filmstrip'; musicMode: 'melody' | 'favorite' | 'off'; secretMessage: string;
   recipient: string; sender: string; title: string; subtitle: string; message: string; closing: string; specialDate: string;
   details: string[]; intensity: 'gentle' | 'full'; textStyle: 'serif' | 'handwritten';
   chapters: { title: string; text: string }[]; promises: string[];
@@ -38,5 +48,6 @@ export function defaultLoveContent(): LoveContent {
   return { theme: 'roses', palette: 'rose', occasion: 'Porque te amo', opening: 'envelope', flower: 'roses',
     recipient: '', sender: '', title: 'Hay un mundo bonito contigo.', subtitle: 'Una pequeña sorpresa, hecha solo para ti.',
     message: '', closing: 'Con todo mi cariño, hoy y siempre.', specialDate: '', details: ['petals', 'hearts', 'stars', 'vines', 'sparkle', 'bouquet'],
-    intensity: 'full', textStyle: 'serif', chapters: [], promises: [], songUrl: '', videoUrl: '', assets: [], giftId: '', giftNote: '' };
+    intensity: 'full', textStyle: 'serif', transition: 'page', photoStyle: 'polaroid', musicMode: 'melody', secretMessage: '', chapters: [], promises: [], songUrl: '', videoUrl: '', assets: [], giftId: '', giftNote: '' };
 }
+
