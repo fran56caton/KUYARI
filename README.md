@@ -41,17 +41,17 @@ Abre http://localhost:3000. npm run seed:demo crea datos de muestra únicamente 
 
 Incluye ESLint, TypeScript estricto, pruebas de API, comercio, seguridad, fotos y recorridos de navegador con Edge en Windows. En otros sistemas instala Chromium para Playwright. Las pruebas usan una base aislada, no el inventario del negocio.
 
-## Publicación pendiente
+## Publicación actual y modalidades de instalación
 
-Esta entrega corre en tu computadora. Para recibir compradores por Internet hace falta un servidor Node con HTTPS y volumen persistente para SQLite y archivos, copias de seguridad, configuración real de entregas e información comercial y publicación de las políticas revisadas. No es una web pública todavía.
+La web pública ya está en https://kuyari.vercel.app/. Utiliza Vercel y almacenamiento permanente en Turso para cartas, pedidos y archivos. Incluye cobro por Yape personal al 900 080 962, a nombre de MARIA CLIDA BERROSPI AQUINO; los reportes de operaciones se verifican manualmente desde el panel. Consulta YAPE-PRODUCCION.md. Falta completar el catálogo real, las zonas, la información comercial, las políticas revisadas y un procedimiento comprobado de copias de seguridad.
 
-Los pagos online están desactivados (ORDER_CHANNEL=whatsapp). Hay integración preparada con Mercado Pago, pero falta configurar y comprobar una cuenta real/sandbox antes de habilitarla. El correo requiere SMTP; sin configurarlo no se enviarán notificaciones ni recuperación de contraseñas por email. El seguimiento dentro de la web sí funciona.
+La coordinación del pedido sigue por WhatsApp (ORDER_CHANNEL=whatsapp). Yape se paga desde la app del comprador y se verifica en la cuenta receptora; no hay confirmación automática ni acceso al saldo de Yape. Mercado Pago está preparado pero requiere credenciales y pruebas antes de habilitarlo. SMTP no está configurado: no se envían notificaciones ni recuperación por email. El seguimiento dentro de la web funciona.
 
-Para una futura instalación, usa .env.example, ejecuta las migraciones y configura NODE_ENV=production, APP_URL=https://..., DB_PATH=data/kuyari.sqlite y STORE_LIVE=true cuando el catálogo real, las zonas y las cinco políticas estén listos. Un solo proceso Node debe operar esta base SQLite. El servidor no publica archivos internos.
+Para instalar la modalidad local Node + SQLite, usa .env.example, ejecuta las migraciones y configura NODE_ENV=production, APP_URL=https://..., DB_PATH=data/kuyari.sqlite y STORE_LIVE=true cuando el catálogo, las zonas y las políticas estén listos. Esa modalidad necesita HTTPS y un volumen persistente para SQLite y archivos; un solo proceso Node opera la base. El flujo Yape documentado corresponde al adaptador cloud publicado en Vercel.
 
 ## Copias de seguridad
 
-Detén el servidor antes de copiar data/ completa y .env a un lugar privado; conserva también el código y package-lock.json. Para restaurar, con el servidor detenido, recupera esos archivos y vuelve a iniciar. No copies únicamente el archivo .sqlite mientras el servidor funciona: puede haber escrituras en su WAL.
+En la modalidad local, detén el servidor antes de copiar data/ completa y .env a un lugar privado; conserva código y package-lock.json. Restaura con el servidor detenido. No copies únicamente .sqlite mientras funciona: puede haber escrituras en su WAL. En la web Vercel, los datos están en Turso; una copia de la carpeta local no incluye esos datos. Se debe configurar y comprobar la exportación y restauración del almacenamiento remoto.
 
 ## Edición azul — 30 de septiembre
 

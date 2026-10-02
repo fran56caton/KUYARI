@@ -23,3 +23,5 @@
 .image-edit img { object-fit: cover; border-radius: 12px; flex-shrink: 0; }
 .image-edit > div { min-width: 0; flex: 1; }
 .image-edit .text-button { margin-right: 18px; }
+
+.yape-qr{display:block;width:min(100%,280px);height:auto;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:16px;margin:20px 0}.yape-qr+button{margin-bottom:12px}.main-nav{flex-wrap:wrap}
