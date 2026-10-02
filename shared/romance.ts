@@ -1,3 +1,4 @@
+import type { GardenConfig } from './garden.js';
 export const loveThemes = [
   { id: 'roses', name: 'Jardín de rosas', line: 'Pétalos, una carta y todo lo que sientes.', symbol: '✿' },
   { id: 'castle', name: 'Nuestro castillo', line: 'Una historia de cuento escrita para ustedes.', symbol: '♜' },
@@ -19,7 +20,8 @@ export const loveThemes = [
   { id: 'aurora', name: 'Aurora de amor', line: 'Un cielo de luz, estrellas y colores que abrazan.', symbol: '✺' },
   { id: 'boyfriend-book', name: 'Revista Día del Novio', line: 'Tu novio, nuestra portada. Una edición solo para él.', symbol: '▤' },
   { id: 'love-magazine', name: 'Revista de nuestro amor', line: 'Una colección de fotos, palabras y canciones de ustedes.', symbol: '❧' },
-  { id: 'keepsake-book', name: 'Libro de colección', line: 'Encuadernación elegante, páginas de marfil y oro.', symbol: '❦' }
+  { id: 'keepsake-book', name: 'Libro de colección', line: 'Encuadernación elegante, páginas de marfil y oro.', symbol: '❦' },
+  { id: 'garden-letter', name: 'Jardín de cartas', line: 'Un sobre, tus flores y palabras que florecen.', symbol: '✿' }
 ] as const;
 export const lovePalettes = [
   { id: 'rose', name: 'Rosa antiguo' }, { id: 'wine', name: 'Vino y oro' },
@@ -38,6 +40,7 @@ export const loveDetails = [
   { id: 'bubbles', name: 'Burbujas de luz' }, { id: 'balloons', name: 'Globos de corazón' }, { id: 'lace', name: 'Encaje delicado' }
 ] as const;
 export interface LoveContent {
+  garden: GardenConfig | null;
   theme: typeof loveThemes[number]['id']; palette: typeof lovePalettes[number]['id']; occasion: string;
   opening: 'envelope' | 'heart' | 'gates' | 'book'; flower: 'roses' | 'daisies' | 'blue' | 'peonies' | 'tulips' | 'lilies';
   transition: 'page' | 'fade' | 'zoom' | 'float'; photoStyle: 'polaroid' | 'gallery' | 'filmstrip'; musicMode: 'melody' | 'favorite' | 'off'; secretMessage: string;
@@ -49,7 +52,7 @@ export interface LoveContent {
 }
 export interface LoveRecord { token: string; content: LoveContent; privacy: 'link' | 'pin'; active: boolean; owner: boolean; assets: { id: string; mime: string }[]; createdAt: string; gift: { id: string; name: string; image: string } | null }
 export function defaultLoveContent(): LoveContent {
-  return { theme: 'roses', palette: 'rose', occasion: 'Porque te amo', opening: 'envelope', flower: 'roses',
+  return { garden: null, theme: 'roses', palette: 'rose', occasion: 'Porque te amo', opening: 'envelope', flower: 'roses',
     recipient: '', sender: '', title: 'Hay un mundo bonito contigo.', subtitle: 'Una pequeña sorpresa, hecha solo para ti.',
     message: '', closing: 'Con todo mi cariño, hoy y siempre.', specialDate: '', details: ['petals', 'hearts', 'stars', 'vines', 'sparkle', 'bouquet'],
     bookStyle: 'editorial', bookQuote: '', bookReasons: [], bookMessages: [], bookCaptions: [], intensity: 'full', textStyle: 'serif', transition: 'page', photoStyle: 'polaroid', musicMode: 'melody', secretMessage: '', chapters: [], promises: [], songUrl: '', videoUrl: '', assets: [], giftId: '', giftNote: '' };
