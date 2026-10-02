@@ -1,5 +1,7 @@
 import { defaultLoveContent, type LoveContent } from '../shared/romance.js';
 import { esc } from './ui.js';
+import { gardenLetter, gardenBackdrop } from './garden-art.js';
+import { gardenDesigns } from '../shared/garden.js';
 import { loveArt, loveParticles } from './love-art.js';
 import { isLoveBook } from '../shared/book.js';
 import { buildLoveBook, bookCover } from './love-book.js';
@@ -26,6 +28,14 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   let screens = buildScreens();
   root.innerHTML = `<div class="love-stage palette-${c.palette} theme-${c.theme} ${c.details.includes('sparkle') ? 'has-opening-sparkle' : ''} text-${c.textStyle} intensity-${c.intensity}">${loveArt(c)}${loveParticles(c)}${['scrapbook','vinyl'].includes(c.theme)?'<div class="love-vinyl" aria-hidden="true"><span>KUYARI<br>♫</span></div>':''}<div class="love-stage-vignette"></div><button type="button" class="love-motion-toggle" aria-pressed="false">Pausar movimiento</button><button type="button" class="love-sound" aria-pressed="false" aria-label="Activar melodía de la sorpresa">♫ <span>Melodía</span></button><div class="love-music-panel" hidden></div><div class="love-intro"><p class="love-overline">KUYARI · UNA HISTORIA SOLO PARA TI</p><h2>${esc(c.recipient ? `Para ${c.recipient}.` : 'Para alguien muy especial.')}</h2><p>${esc(c.subtitle)}</p><button type="button" class="love-opening opening-${c.opening}" aria-label="Abrir esta sorpresa"><span class="love-envelope-flap"></span><span class="love-envelope-paper">${esc(c.recipient)}</span><span class="love-seal">♡</span><span class="love-book-mark">❦</span></button><p class="love-invitation">${c.opening === 'gates' ? 'Abre las puertas de nuestra historia' : c.opening === 'heart' ? 'Toca el corazón. Hay algo para ti.' : c.opening === 'book' ? 'Abre el primer capítulo de nuestra historia' : 'Toca el sobre. Lo escribí pensando en ti.'}</p><button class="love-open-text" type="button">Abrir mi sorpresa <span>↗</span></button></div><div class="love-content-panel" hidden><article class="love-paper" tabindex="-1"></article><nav class="love-story-nav" aria-label="Capítulos de la sorpresa"><button class="love-back" type="button" aria-label="Capítulo anterior">←</button><div class="love-story-progress" aria-live="polite"></div><button class="love-next" type="button">Siguiente →</button></nav></div><div class="love-stage-brand">Hecho con cariño · KUYARI</div></div>`;
   const stage = root.querySelector<HTMLElement>('.love-stage')!, intro = root.querySelector<HTMLElement>('.love-intro')!, panel = root.querySelector<HTMLElement>('.love-content-panel')!, paper = root.querySelector<HTMLElement>('.love-paper')!;
+  if (c.theme === 'garden-letter' && c.garden) {
+    const design = gardenDesigns.find(d => d.id === c.garden!.design)!;
+    stage.classList.add('garden-experience', `design-${design.id}`);
+    stage.style.background = design.bg;
+    stage.style.setProperty('--garden-paper', design.paper);
+    stage.querySelector('.love-art')!.outerHTML = gardenBackdrop(c.garden);
+    root.querySelector('.love-opening')!.insertAdjacentHTML('beforeend', gardenLetter({...c.garden,motion:true}, c.recipient, c.sender, c.message));
+  }
   if (book) {
     stage.classList.add('book-experience', `book-style-${c.bookStyle}`, `book-photos-${c.photoStyle}`);
     root.querySelector('.love-opening')!.insertAdjacentHTML('beforeend', bookCover(c, assets));
@@ -62,7 +72,7 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
       const play = () => { if (!music || disposed) return; const o = music.createOscillator(), g = music.createGain(); o.type = 'sine'; o.frequency.value = notes[noteIndex++ % notes.length]; g.gain.setValueAtTime(0, music.currentTime); g.gain.linearRampToValueAtTime(.025, music.currentTime + .03); g.gain.exponentialRampToValueAtTime(.001, music.currentTime + 1.8); o.connect(g); g.connect(music.destination); o.start(); o.stop(music.currentTime + 2); }; play(); musicTimer = setInterval(play, 1050); sound.setAttribute('aria-pressed', 'true'); stage.classList.add('love-music-playing');
     } catch { sound.textContent = 'Melodía no disponible'; }
   };
-  let pageAnimation: Animation | undefined, motionPaused = false;
+  let pageAnimation: Animation | undefined, motionPaused = c.garden?.motion === false;
   let previousIndex = 0;
   let turningSheet: HTMLElement | undefined;
   function render(focus = true, animate = true) {
@@ -115,6 +125,8 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   let visible = true;
   const updateMotion = () => { const inactive = document.hidden || !visible; stage.classList.toggle('love-motion-paused', inactive || motionPaused); if (inactive) { stopMusic(); paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause()); } };
   const motionButton = root.querySelector<HTMLButtonElement>('.love-motion-toggle')!;
+  motionButton.setAttribute('aria-pressed', String(motionPaused));
+  if (motionPaused) motionButton.textContent = 'Volver a animar';
   motionButton.onclick = () => { motionPaused = !motionPaused; motionButton.setAttribute('aria-pressed', String(motionPaused)); motionButton.textContent = motionPaused ? 'Volver a animar' : 'Pausar movimiento'; if (motionPaused) pageAnimation?.cancel(); updateMotion(); };
   const onKey = (event: KeyboardEvent) => {
     if (panel.hidden || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || (event.target as Element).closest('input,textarea,select,[contenteditable],video,audio')) return;
@@ -125,7 +137,7 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   const observer = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? true; updateMotion(); }); observer.observe(stage);
   document.addEventListener('visibilitychange', updateMotion); updateMotion();
   const dispose = (() => { disposed = true; clearTimeout(openingTimer); pageAnimation?.cancel(); observer.disconnect(); resize.disconnect(); paper.removeEventListener('pointerdown',onPointerDown);paper.removeEventListener('pointerup',onPointerUp);paper.removeEventListener('pointercancel',onPointerCancel);root.removeEventListener('keydown', onKey); stopMusic(); if (audio) { audio.removeAttribute('src'); audio.load(); } paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause()); document.removeEventListener('visibilitychange', updateMotion); root.innerHTML = ''; }) as LoveExperience;
-  const visualKey = (content: LoveContent) => JSON.stringify([content.theme, content.palette, content.opening, content.flower, content.details, content.intensity, content.textStyle, content.transition, content.photoStyle, content.musicMode, content.songUrl, content.assets, content.bookStyle]);
+  const visualKey = (content: LoveContent) => JSON.stringify([content.theme, content.palette, content.opening, content.flower, content.details, content.intensity, content.textStyle, content.transition, content.photoStyle, content.musicMode, content.songUrl, content.assets, content.bookStyle, content.garden]);
   dispose.update = (content, nextAssets) => {
     content = {...defaultLoveContent(), ...content};
     if (disposed || visualKey(content) !== visualKey(c)) return false;
@@ -133,6 +145,11 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
     intro.querySelector('h2')!.textContent = c.recipient ? 'Para ' + c.recipient + '.' : 'Para alguien muy especial.';
     intro.querySelectorAll('p')[1].textContent = c.subtitle;
     root.querySelector('.love-envelope-paper')!.textContent = c.recipient;
+    if (c.garden && c.theme === 'garden-letter') {
+      root.querySelector('[data-garden-to]')!.textContent = c.recipient ? 'Para ' + c.recipient : 'Para mi persona favorita';
+      root.querySelector('[data-garden-message]')!.textContent = c.message;
+      root.querySelector('[data-garden-from]')!.textContent = c.sender ? 'Con cariño, ' + c.sender : 'Con todo mi cariño ♡';
+    }
     if(book)root.querySelector('.book-cover')!.outerHTML=bookCover(c,assets);
     if (!panel.hidden) render(false, false);
     return true;

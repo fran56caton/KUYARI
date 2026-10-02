@@ -266,15 +266,17 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.use('/api', (_req, _res) => { throw new HttpError(404, 'Ruta no encontrada'); });
   app.use('/assets/web', express.static(resolve('assets/web'), { maxAge: '1d', dotfiles: 'deny' }));
   app.get('/assets/favicon.svg', (_req, res) => res.sendFile(resolve('assets/favicon.svg')));
-  app.use('/src', express.static(resolve('dist/client'), { maxAge: config.NODE_ENV === 'production' ? '1h' : 0, dotfiles: 'deny' }));
-  app.use('/shared', express.static(resolve('dist/shared'), { maxAge: '1h', dotfiles: 'deny' }));
+  app.use('/src', express.static(resolve('dist/client'), { maxAge: 0, dotfiles: 'deny' }));
+  app.use('/shared', express.static(resolve('dist/shared'), { maxAge: 0, dotfiles: 'deny' }));
   app.get('/styles.css', (_req, res) => res.sendFile(resolve('styles.css')));
   app.get('/robots.txt', (_req, res) => res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cuenta\nDisallow: /checkout\nDisallow: /pedido/\nDisallow: /recuerdo/\nDisallow: /sorpresa/\nDisallow: /mis-cartas\nDisallow: /api/\nSitemap: ${config.APP_URL}/sitemap.xml`));
-  app.get('/sitemap.xml', (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/30-de-septiembre', ...products(db).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
-  app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
+  app.get('/sitemap.xml', (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/jardin-cartas', '/jardin-flores', '/30-de-septiembre', ...products(db).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
+  app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/jardin-cartas$|\/jardin-flores$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
     let title = 'KUYARI | Tu historia, hecha sorpresa', description = 'Regalos personalizados, flores y recuerdos digitales. Crea una sorpresa que cuente tu historia.', status = 200;
     if (req.path === '/30-de-septiembre') { title = '30 de septiembre: carritos y flores azules | KUYARI'; description = 'Encuentra tu detalle: ramos de carritos, flores azules y cajas sorpresa. Personaliza tu propuesta y consulta por WhatsApp.'; }
-    if (req.path.startsWith('/regalos/')) { const p = products(db).find(p => req.path === `/regalos/${p.slug}`); if (p) { title = `${p.name} | KUYARI`; description = p.summary; } else status = 404; }
+    if (req.path === '/jardin-cartas') { title = 'Jardín de cartas románticas | KUYARI'; description = 'Personaliza un sobre entre flores. 24 modelos, tus palabras y un QR para acompañar su regalo.'; }
+        if (req.path === '/jardin-flores') { title = 'Diseña su ramo y su carta | KUYARI'; description = 'Combina flores, envolturas, cintas y una dedicatoria. Mira tu propuesta y coordina el regalo por WhatsApp.'; }
+        if (req.path.startsWith('/regalos/')) { const p = products(db).find(p => req.path === `/regalos/${p.slug}`); if (p) { title = `${p.name} | KUYARI`; description = p.summary; } else status = 404; }
     if (/^\/(pedido|recuerdo|sorpresa|mis-cartas|crear-qr|admin|activar-admin|cuenta|checkout|recuperar)/.test(req.path)) res.set('X-Robots-Tag', 'noindex, nofollow');
     let html = await readFile(resolve('index.html'), 'utf8');
     html = html.replace('<title>KUYARI | Tu historia, hecha sorpresa</title>', `<title>${escape(title)}</title>`).replace('<!--seo-->', `<meta name="description" content="${escape(description)}"><link rel="canonical" href="${escape(config.APP_URL + req.path)}"><meta property="og:title" content="${escape(title)}"><meta property="og:description" content="${escape(description)}"><meta property="og:type" content="website"><meta property="og:url" content="${escape(config.APP_URL + req.path)}"><meta property="og:image" content="${config.APP_URL}/assets/web/ramo-kuyari.webp"><meta name="twitter:card" content="summary_large_image">`);
@@ -291,4 +293,3 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   });
   return app;
 }
-

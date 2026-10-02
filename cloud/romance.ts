@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validGarden, type GardenConfig } from '../shared/garden.js';
 import QRCode from 'qrcode';
 import { randomUUID } from 'node:crypto';
 import { loveThemes, lovePalettes, loveOccasions, loveDetails } from '../shared/romance.js';
@@ -15,6 +16,7 @@ interface Row { id: string; public_token: string; session_id: string; user_id: s
 const short = z.string().trim().max(180);
 const url = z.string().max(1000).refine(v => !v || (() => { try { const u = new URL(v); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; } })(), 'Usa un enlace HTTPS').default('');
 const contentSchema = z.object({
+  garden: z.custom<GardenConfig>(validGarden, 'Revisa las opciones de tu jardín').transform(c=>({design:c.design,flowers:c.flowers.map(f=>({id:f.id,color:f.color,quantity:f.quantity})),shape:c.shape,wrap:c.wrap,ribbon:c.ribbon,extras:[...c.extras],motion:c.motion})).nullable().default(null),
   theme: z.enum(loveThemes.map(t => t.id)), palette: z.enum(lovePalettes.map(t => t.id)), occasion: z.enum(loveOccasions),
   opening: z.enum(['envelope', 'heart', 'gates', 'book']), flower: z.enum(['roses', 'daisies', 'blue', 'peonies', 'tulips', 'lilies']),
   transition: z.enum(['page','fade','zoom','float']).default('page'), photoStyle: z.enum(['polaroid','gallery','filmstrip']).default('polaroid'),
