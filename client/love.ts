@@ -82,11 +82,23 @@ export async function createLove() {
     for (const link of [c.songUrl, c.videoUrl]) if (link) { let valid = false; try { const u = new URL(link); valid = u.protocol === 'https:' && !u.username && !u.password; } catch { /* Invalid link is explained below. */ } if (!valid) throw new Error('Los enlaces a su canción y video deben empezar con https://.'); }
   }
   $('#love-full-preview').onclick = () => {
-    try { clearTimeout(dirtyTimer); const c = read(); validate(c); destroyModal?.(); destroyModal = mountLoveExperience($('#love-modal-stage'), c, assets); destroyInline?.(); destroyInline = undefined; dialog.showModal(); }
+    try {
+      clearTimeout(dirtyTimer); const c = read();
+      const display = { ...c, recipient: c.recipient || 'mi persona favorita', title: c.title || first.title, message: c.message || (ideas[c.occasion] || generic).message };
+      destroyModal?.(); destroyModal = mountLoveExperience($('#love-modal-stage'), display, assets);
+      dialog.showModal(); destroyInline?.(); destroyInline = undefined;
+    }
     catch (e) { fail(e, form); }
   };
   $('#love-close-preview').onclick = () => dialog.close();
-  dialog.addEventListener('close', () => { destroyModal?.(); destroyModal = undefined; drawPreview(); previewVisited = true; $<HTMLInputElement>('#love-previewed').disabled = false; $('#love-preview-help').textContent = 'Si todo se siente como quieres, confirma tu vista previa.'; $<HTMLButtonElement>('#love-create-qr').disabled = !(checked(form, 'previewed') && checked(form, 'consent')); });
+  dialog.addEventListener('close', () => {
+    destroyModal?.(); destroyModal = undefined; drawPreview();
+    let help = 'Si todo se siente como quieres, confirma tu vista previa.';
+    try { validate(read()); previewVisited = true; } catch (e) { previewVisited = false; help = e instanceof Error ? e.message : 'Completa tu carta antes de crear el QR.'; }
+    $<HTMLInputElement>('#love-previewed').disabled = !previewVisited;
+    $('#love-preview-help').textContent = help;
+    $<HTMLButtonElement>('#love-create-qr').disabled = !(previewVisited && checked(form, 'previewed') && checked(form, 'consent'));
+  });
   form.addEventListener('submit', async e => {
     e.preventDefault(); const button = $<HTMLButtonElement>('#love-create-qr'); button.disabled = true;
     try { const content = read(); validate(content); if (!previewVisited || !checked(form, 'previewed') || !checked(form, 'consent')) throw new Error('Revisa la vista previa y confirma tu carta antes de crear el QR.');
