@@ -1,13 +1,18 @@
 import { defaultLoveContent, type LoveContent } from '../shared/romance.js';
 import { esc } from './ui.js';
 import { loveArt, loveParticles } from './love-art.js';
+import { isLoveBook } from '../shared/book.js';
+import { buildLoveBook, bookCover } from './love-book.js';
 function safeLink(link: string) { try { const u = new URL(link); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; } }
 export interface LoveAsset { id: string; mime: string }
 export type LoveExperience = (() => void) & { update: (content: LoveContent, assets: LoveAsset[]) => boolean };
 export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: LoveAsset[] = []): LoveExperience {
   c = { ...defaultLoveContent(), ...c };
+  const book = isLoveBook(c);
+  let singleBook = root.clientWidth < 640;
   const memories = () => assets.filter(a => !a.mime.startsWith('audio/'));
   function buildScreens() {
+  if (book) return buildLoveBook(c, assets, singleBook);
   const date = c.specialDate ? new Date(`${c.specialDate}T12:00:00Z`).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Lima' }) : '';
   return [
     { name: 'Tu carta', html: `<span class="love-overline">${esc(c.occasion)}${date ? ` · ${esc(date)}` : ''}</span><h2>${esc(c.title)}</h2><p class="love-to">Para ${esc(c.recipient)}</p><div class="love-letter-text">${esc(c.message)}</div>${c.sender ? `<p class="love-signature">Con amor, ${esc(c.sender)}</p>` : ''}` },
@@ -21,6 +26,12 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   let screens = buildScreens();
   root.innerHTML = `<div class="love-stage palette-${c.palette} theme-${c.theme} ${c.details.includes('sparkle') ? 'has-opening-sparkle' : ''} text-${c.textStyle} intensity-${c.intensity}">${loveArt(c)}${loveParticles(c)}${['scrapbook','vinyl'].includes(c.theme)?'<div class="love-vinyl" aria-hidden="true"><span>KUYARI<br>♫</span></div>':''}<div class="love-stage-vignette"></div><button type="button" class="love-motion-toggle" aria-pressed="false">Pausar movimiento</button><button type="button" class="love-sound" aria-pressed="false" aria-label="Activar melodía de la sorpresa">♫ <span>Melodía</span></button><div class="love-music-panel" hidden></div><div class="love-intro"><p class="love-overline">KUYARI · UNA HISTORIA SOLO PARA TI</p><h2>${esc(c.recipient ? `Para ${c.recipient}.` : 'Para alguien muy especial.')}</h2><p>${esc(c.subtitle)}</p><button type="button" class="love-opening opening-${c.opening}" aria-label="Abrir esta sorpresa"><span class="love-envelope-flap"></span><span class="love-envelope-paper">${esc(c.recipient)}</span><span class="love-seal">♡</span><span class="love-book-mark">❦</span></button><p class="love-invitation">${c.opening === 'gates' ? 'Abre las puertas de nuestra historia' : c.opening === 'heart' ? 'Toca el corazón. Hay algo para ti.' : c.opening === 'book' ? 'Abre el primer capítulo de nuestra historia' : 'Toca el sobre. Lo escribí pensando en ti.'}</p><button class="love-open-text" type="button">Abrir mi sorpresa <span>↗</span></button></div><div class="love-content-panel" hidden><article class="love-paper" tabindex="-1"></article><nav class="love-story-nav" aria-label="Capítulos de la sorpresa"><button class="love-back" type="button" aria-label="Capítulo anterior">←</button><div class="love-story-progress" aria-live="polite"></div><button class="love-next" type="button">Siguiente →</button></nav></div><div class="love-stage-brand">Hecho con cariño · KUYARI</div></div>`;
   const stage = root.querySelector<HTMLElement>('.love-stage')!, intro = root.querySelector<HTMLElement>('.love-intro')!, panel = root.querySelector<HTMLElement>('.love-content-panel')!, paper = root.querySelector<HTMLElement>('.love-paper')!;
+  if (book) {
+    stage.classList.add('book-experience', `book-style-${c.bookStyle}`);
+    root.querySelector('.love-opening')!.insertAdjacentHTML('beforeend', bookCover(c, assets));
+    root.querySelector('.love-story-nav')!.insertAdjacentHTML('afterbegin', '<button type="button" class="book-contents-button" aria-label="Ir al índice del libro">Índice</button>');
+    root.querySelector('.love-invitation')!.textContent = 'Abre el primer capítulo de nuestra historia';
+  }
   let openingTimer: ReturnType<typeof setTimeout> | undefined; let index = 0, disposed = false, music: AudioContext | null = null, musicTimer: ReturnType<typeof setInterval> | null = null;
   let audio: HTMLAudioElement | null = null;
   const musicPanel = root.querySelector<HTMLElement>('.love-music-panel')!;
@@ -52,14 +63,27 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
     } catch { sound.textContent = 'Melodía no disponible'; }
   };
   let pageAnimation: Animation | undefined, motionPaused = false;
+  let previousIndex = 0;
+  let turningSheet: HTMLElement | undefined;
   function render(focus = true, animate = true) {
+    pageAnimation?.cancel(); turningSheet?.remove(); turningSheet = undefined;
     paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause());
+    const forward = index >= previousIndex;
+    const oldPage = book && animate && index !== previousIndex ? paper.querySelector<HTMLElement>(singleBook || !forward ? '.book-page' : '.book-page:last-child')?.cloneNode(true) as HTMLElement | undefined : undefined;
     paper.innerHTML = screens[index].html; paper.scrollTop = 0;
-    pageAnimation?.cancel();
     if (animate && !motionPaused && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      const transform = c.transition === 'fade' ? 'none' : c.transition === 'zoom' ? 'scale(.92)' : c.transition === 'float' ? 'translateY(24px)' : 'translateY(25px) rotate(-2deg)';
-      pageAnimation = paper.animate([{opacity:0,transform},{opacity:1,transform:'none'}],{duration:c.transition==='fade'?420:600,easing:'ease-out',fill:'none'});
+      if (oldPage) {
+        turningSheet=oldPage; oldPage.classList.add('book-turning-sheet'); oldPage.classList.toggle('turn-back',!forward);oldPage.classList.toggle('turn-single',singleBook);oldPage.setAttribute('aria-hidden','true');oldPage.inert=true;paper.append(oldPage);
+        pageAnimation=oldPage.animate([{transform:'perspective(1600px) rotateY(0deg)',opacity:1},{transform:`perspective(1600px) rotateY(${forward?-110:110}deg)`,opacity:0}],{duration:650,easing:'cubic-bezier(.25,.65,.25,1)',fill:'forwards'});
+        pageAnimation.onfinish=()=>{oldPage.remove();if(turningSheet===oldPage)turningSheet=undefined;};
+      } else {
+        const transform = book || c.transition === 'fade' ? 'none' : c.transition === 'zoom' ? 'scale(.92)' : c.transition === 'float' ? 'translateY(24px)' : 'translateY(25px) rotate(-2deg)';
+        pageAnimation = paper.animate([{opacity:.4,transform},{opacity:1,transform:'none'}],{duration:book?350:c.transition==='fade'?420:600,easing:'ease-out',fill:'none'});
+      }
     }
+    previousIndex = index;
+    paper.querySelectorAll<HTMLButtonElement>('[data-book-jump]').forEach(button => { button.onclick = () => { index = Math.min(Number(button.dataset.bookJump), screens.length - 1); render(); }; });
+    paper.querySelector<HTMLButtonElement>('[data-book-music]')?.addEventListener('click', () => sound.click());
     root.querySelectorAll<HTMLVideoElement>('video').forEach(video => { if (!paper.contains(video)) video.pause(); });
     const canvas = paper.querySelector<HTMLCanvasElement>('.love-scratch canvas'), secret = paper.querySelector<HTMLElement>('.love-secret');
     const reveal = () => { if (canvas && secret) { canvas.hidden = true; secret.hidden = false; paper.querySelector<HTMLButtonElement>('[data-love-secret]')!.disabled = true; } };
@@ -81,6 +105,13 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   root.querySelector<HTMLButtonElement>('.love-opening')!.onclick = open; root.querySelector<HTMLButtonElement>('.love-open-text')!.onclick = open;
   root.querySelector<HTMLButtonElement>('.love-back')!.onclick = () => { if (index > 0) { index--; render(); } };
   root.querySelector<HTMLButtonElement>('.love-next')!.onclick = () => { if (index < screens.length - 1) { index++; render(); } };
+  root.querySelector<HTMLButtonElement>('.book-contents-button')?.addEventListener('click', () => { index = singleBook ? 2 : 1; render(); });
+  let swipeStart: {x:number;y:number} | undefined;
+  const onPointerDown = (event: PointerEvent) => { if (!book || event.pointerType === 'mouse' || (event.target as Element).closest('button,a,canvas,video,audio')) return; swipeStart = {x:event.clientX,y:event.clientY}; };
+  const onPointerUp = (event: PointerEvent) => { if (!swipeStart) return; const dx=event.clientX-swipeStart.x,dy=event.clientY-swipeStart.y;swipeStart=undefined;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.4)return;const next=Math.max(0,Math.min(screens.length-1,index+(dx<0?1:-1)));if(next!==index){index=next;render();} };
+  const onPointerCancel = () => { swipeStart=undefined; };
+  paper.addEventListener('pointerdown',onPointerDown);paper.addEventListener('pointerup',onPointerUp);paper.addEventListener('pointercancel',onPointerCancel);
+  const resize = new ResizeObserver(() => { if (!book) return; const next = root.clientWidth < 640; if (next === singleBook) return; index = next ? index*2 : Math.floor(index/2); singleBook=next; screens=buildScreens(); index=Math.min(index,screens.length-1); if(!panel.hidden)render(false,false); });resize.observe(root);
   let visible = true;
   const updateMotion = () => { const inactive = document.hidden || !visible; stage.classList.toggle('love-motion-paused', inactive || motionPaused); if (inactive) { stopMusic(); paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause()); } };
   const motionButton = root.querySelector<HTMLButtonElement>('.love-motion-toggle')!;
@@ -93,8 +124,8 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
   root.addEventListener('keydown', onKey);
   const observer = new IntersectionObserver(entries => { visible = entries[0]?.isIntersecting ?? true; updateMotion(); }); observer.observe(stage);
   document.addEventListener('visibilitychange', updateMotion); updateMotion();
-  const dispose = (() => { disposed = true; clearTimeout(openingTimer); pageAnimation?.cancel(); observer.disconnect(); root.removeEventListener('keydown', onKey); stopMusic(); if (audio) { audio.removeAttribute('src'); audio.load(); } paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause()); document.removeEventListener('visibilitychange', updateMotion); root.innerHTML = ''; }) as LoveExperience;
-  const visualKey = (content: LoveContent) => JSON.stringify([content.theme, content.palette, content.opening, content.flower, content.details, content.intensity, content.textStyle, content.transition, content.photoStyle, content.musicMode, content.songUrl, content.assets]);
+  const dispose = (() => { disposed = true; clearTimeout(openingTimer); pageAnimation?.cancel(); observer.disconnect(); resize.disconnect(); paper.removeEventListener('pointerdown',onPointerDown);paper.removeEventListener('pointerup',onPointerUp);paper.removeEventListener('pointercancel',onPointerCancel);root.removeEventListener('keydown', onKey); stopMusic(); if (audio) { audio.removeAttribute('src'); audio.load(); } paper.querySelectorAll<HTMLVideoElement>('video').forEach(v=>v.pause()); document.removeEventListener('visibilitychange', updateMotion); root.innerHTML = ''; }) as LoveExperience;
+  const visualKey = (content: LoveContent) => JSON.stringify([content.theme, content.palette, content.opening, content.flower, content.details, content.intensity, content.textStyle, content.transition, content.photoStyle, content.musicMode, content.songUrl, content.assets, content.bookStyle]);
   dispose.update = (content, nextAssets) => {
     content = {...defaultLoveContent(), ...content};
     if (disposed || visualKey(content) !== visualKey(c)) return false;
@@ -102,9 +133,9 @@ export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: L
     intro.querySelector('h2')!.textContent = c.recipient ? 'Para ' + c.recipient + '.' : 'Para alguien muy especial.';
     intro.querySelectorAll('p')[1].textContent = c.subtitle;
     root.querySelector('.love-envelope-paper')!.textContent = c.recipient;
+    if(book)root.querySelector('.book-cover')!.outerHTML=bookCover(c,assets);
     if (!panel.hidden) render(false, false);
     return true;
   };
   return dispose;
 }
-

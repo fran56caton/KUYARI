@@ -16,14 +16,17 @@ export const loveThemes = [
   { id: 'flower-wall', name: 'Mil flores para ti', line: 'Una explosión de flores que guarda tus palabras.', symbol: '✿' },
   { id: 'scrapbook', name: 'Nuestro álbum vintage', line: 'Papel antiguo, fotos y recuerdos para descubrir.', symbol: '▧' },
   { id: 'vinyl', name: 'La canción de nosotros', line: 'Un disco, nuestra canción y una carta inolvidable.', symbol: '♫' },
-  { id: 'aurora', name: 'Aurora de amor', line: 'Un cielo de luz, estrellas y colores que abrazan.', symbol: '✺' }
+  { id: 'aurora', name: 'Aurora de amor', line: 'Un cielo de luz, estrellas y colores que abrazan.', symbol: '✺' },
+  { id: 'boyfriend-book', name: 'Revista Día del Novio', line: 'Tu novio, nuestra portada. Una edición solo para él.', symbol: '▤' },
+  { id: 'love-magazine', name: 'Revista de nuestro amor', line: 'Una colección de fotos, palabras y canciones de ustedes.', symbol: '❧' },
+  { id: 'keepsake-book', name: 'Libro de colección', line: 'Encuadernación elegante, páginas de marfil y oro.', symbol: '❦' }
 ] as const;
 export const lovePalettes = [
   { id: 'rose', name: 'Rosa antiguo' }, { id: 'wine', name: 'Vino y oro' },
   { id: 'sky', name: 'Azul cielo' }, { id: 'lilac', name: 'Lavanda' }, { id: 'ivory', name: 'Marfil y oro' },
   { id: 'blush', name: 'Rosa de ensueño' }, { id: 'peach', name: 'Durazno y crema' }, { id: 'sage', name: 'Jardín de salvia' }, { id: 'midnight', name: 'Noche azul' }
 ] as const;
-export const loveOccasions = ['Porque te amo', 'Aniversario', 'Cumpleaños', 'San Valentín', 'Gracias', 'Una disculpa', 'Amor a distancia', '¿Te casas conmigo?', 'Para mamá', 'Amistad', 'Un logro especial', 'Porque sí'];
+export const loveOccasions = ['Porque te amo', 'Aniversario', 'Cumpleaños', 'San Valentín', 'Gracias', 'Una disculpa', 'Amor a distancia', '¿Te casas conmigo?', 'Para mamá', 'Amistad', 'Un logro especial', 'Porque sí', 'Día del Novio'];
 export const loveDetails = [
   { id: 'petals', name: 'Lluvia de pétalos' }, { id: 'hearts', name: 'Corazones flotantes' },
   { id: 'stars', name: 'Destellos dorados' }, { id: 'butterflies', name: 'Mariposas' },
@@ -38,6 +41,7 @@ export interface LoveContent {
   theme: typeof loveThemes[number]['id']; palette: typeof lovePalettes[number]['id']; occasion: string;
   opening: 'envelope' | 'heart' | 'gates' | 'book'; flower: 'roses' | 'daisies' | 'blue' | 'peonies' | 'tulips' | 'lilies';
   transition: 'page' | 'fade' | 'zoom' | 'float'; photoStyle: 'polaroid' | 'gallery' | 'filmstrip'; musicMode: 'melody' | 'favorite' | 'off'; secretMessage: string;
+  bookStyle: 'editorial'|'classic'|'romantic'; bookQuote: string; bookReasons: string[]; bookMessages: string[]; bookCaptions: string[];
   recipient: string; sender: string; title: string; subtitle: string; message: string; closing: string; specialDate: string;
   details: string[]; intensity: 'gentle' | 'full'; textStyle: 'serif' | 'handwritten';
   chapters: { title: string; text: string }[]; promises: string[];
@@ -48,6 +52,5 @@ export function defaultLoveContent(): LoveContent {
   return { theme: 'roses', palette: 'rose', occasion: 'Porque te amo', opening: 'envelope', flower: 'roses',
     recipient: '', sender: '', title: 'Hay un mundo bonito contigo.', subtitle: 'Una pequeña sorpresa, hecha solo para ti.',
     message: '', closing: 'Con todo mi cariño, hoy y siempre.', specialDate: '', details: ['petals', 'hearts', 'stars', 'vines', 'sparkle', 'bouquet'],
-    intensity: 'full', textStyle: 'serif', transition: 'page', photoStyle: 'polaroid', musicMode: 'melody', secretMessage: '', chapters: [], promises: [], songUrl: '', videoUrl: '', assets: [], giftId: '', giftNote: '' };
+    bookStyle: 'editorial', bookQuote: '', bookReasons: [], bookMessages: [], bookCaptions: [], intensity: 'full', textStyle: 'serif', transition: 'page', photoStyle: 'polaroid', musicMode: 'melody', secretMessage: '', chapters: [], promises: [], songUrl: '', videoUrl: '', assets: [], giftId: '', giftNote: '' };
 }
-

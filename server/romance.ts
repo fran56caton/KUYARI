@@ -19,6 +19,8 @@ const contentSchema = z.object({
   opening: z.enum(['envelope', 'heart', 'gates', 'book']), flower: z.enum(['roses', 'daisies', 'blue', 'peonies', 'tulips', 'lilies']),
   transition: z.enum(['page','fade','zoom','float']).default('page'), photoStyle: z.enum(['polaroid','gallery','filmstrip']).default('polaroid'),
   musicMode: z.enum(['melody','favorite','off']).default('melody'), secretMessage: z.string().trim().max(600).default(''),
+  bookStyle: z.enum(['editorial','classic','romantic']).default('editorial'), bookQuote: short.default(''),
+  bookReasons: z.array(z.string().trim().min(1).max(200)).max(12).default([]), bookMessages: z.array(z.string().trim().min(1).max(400)).max(8).default([]), bookCaptions: z.array(short).max(10).default([]),
   recipient: short.min(1), sender: short, title: short.min(2), subtitle: short, message: z.string().trim().min(10).max(6000),
   closing: z.string().trim().max(600), specialDate: z.string().regex(/^(\d{4}-\d{2}-\d{2})?$/),
   details: z.array(z.enum(loveDetails.map(d => d.id))).max(18), intensity: z.enum(['gentle', 'full']), textStyle: z.enum(['serif', 'handwritten']),
@@ -113,4 +115,3 @@ export function registerRomance(app: Express, db: LoveDB, config: Config, limit:
     const c = JSON.parse(row.content); res.type('image/svg+xml').set('Content-Disposition', 'attachment; filename="KUYARI-corazon.svg"').send(await heartQR(`${config.APP_URL}/sorpresa/${row.public_token}`, `Para ${c.recipient}`, c.palette));
   });
 }
-
