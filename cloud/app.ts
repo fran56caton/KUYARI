@@ -53,6 +53,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
     const limiter = (limit: number, minutes = 15) => rateLimit({ windowMs: minutes * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo' } });
     app.get('/assets/september.css', (_req, res) => res.sendFile(resolve('assets/september.css')));
+    app.get('/assets/invitation.css', (_req, res) => res.sendFile(resolve('assets/invitation.css')));
     app.get('/assets/garden.css', (_req, res) => res.sendFile(resolve('assets/garden.css')));
     app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
     app.get('/health', async (_req, res) => { (await db.get('SELECT 1')); res.json({ status: 'ok' }); });

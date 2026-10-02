@@ -47,7 +47,7 @@ test('cloud romantic cards persist in D1 and protect private R2 photos with PIN'
  const content={theme:'castle',palette:'rose',occasion:'Aniversario',opening:'gates',flower:'roses',recipient:'María',sender:'Ana',title:'Nuestra historia de cuento',subtitle:'Algo escrito para ti.',message:'Cada día contigo es mi historia favorita.',closing:'Por muchos capítulos más.',specialDate:'',details:['petals','hearts','vines'],intensity:'full',textStyle:'serif',chapters:[{title:'Nuestro encuentro',text:'Una sonrisa, un café y el principio de todo.'}],promises:['Cuidar nuestra historia.'],songUrl:'',videoUrl:'',assets:[],giftId:'',giftNote:''};
  const upload=new FormData();upload.set('file',new Blob([fs.readFileSync('assets/web/ramo-kuyari.webp')],{type:'image/webp'}),'moment.webp');let r=await call('/api/uploads','POST',upload);assert.equal(r.status,201,JSON.stringify(r.data));content.assets=[r.data.id];
  const input={content,privacy:'pin',pin:'123456',consent:true,previewed:true,requestKey:crypto.randomUUID()};assert.equal((await call('/api/love-cards','POST',{...input,previewed:false})).status,400);r=await call('/api/love-cards','POST',input);assert.equal(r.status,201,JSON.stringify(r.data));const token=r.data.token,key=r.data.accessKey;assert.equal((await call('/api/love-cards','POST',input)).data.token,token);assert.equal(sqlite.prepare('SELECT COUNT(*) n FROM love_cards').get().n,1);assert.equal((await call('/api/love-cards/'+token+'/qr')).status,200);
- const ownerCookie=cookie,ownerCSRF=csrf;cookie='';csrf='';r=await call('/api/session');csrf=r.data.csrf;assert.equal((await call('/api/love-cards/'+token)).data.needsPin,true);assert.equal((await call('/api/assets/'+content.assets[0])).status,404);assert.equal((await call('/api/love-cards/'+token+'/qr')).status,404);assert.equal((await call('/api/love-cards/'+token+'/unlock','POST',{pin:'123456'})).status,200);r=await call('/api/love-cards/'+token);assert.equal(r.status,200);assert.deepEqual(r.data.content,{garden:null,transition:'page',photoStyle:'polaroid',musicMode:'melody',secretMessage:'',bookStyle:'editorial',bookQuote:'',bookReasons:[],bookMessages:[],bookCaptions:[],...content});assert.ok(!JSON.stringify(r.data).includes('pin_hash'));assert.equal((await call('/api/assets/'+content.assets[0])).status,200);
+ const ownerCookie=cookie,ownerCSRF=csrf;cookie='';csrf='';r=await call('/api/session');csrf=r.data.csrf;assert.equal((await call('/api/love-cards/'+token)).data.needsPin,true);assert.equal((await call('/api/assets/'+content.assets[0])).status,404);assert.equal((await call('/api/love-cards/'+token+'/qr')).status,404);assert.equal((await call('/api/love-cards/'+token+'/unlock','POST',{pin:'123456'})).status,200);r=await call('/api/love-cards/'+token);assert.equal(r.status,200);assert.deepEqual(r.data.content,{invitation:null,garden:null,transition:'page',photoStyle:'polaroid',musicMode:'melody',secretMessage:'',bookStyle:'editorial',bookQuote:'',bookReasons:[],bookMessages:[],bookCaptions:[],...content});assert.ok(!JSON.stringify(r.data).includes('pin_hash'));assert.equal((await call('/api/assets/'+content.assets[0])).status,200);
  const guestCookie=cookie,guestCSRF=csrf;cookie=ownerCookie;csrf=ownerCSRF;assert.equal((await call('/api/love-cards/'+token,'PATCH',{active:false})).status,200);cookie=guestCookie;csrf=guestCSRF;assert.equal((await call('/api/love-cards/'+token)).status,404);assert.equal((await call('/api/assets/'+content.assets[0])).status,404);assert.equal((await call('/api/love-cards/access','POST',{token,key})).status,200);assert.equal((await call('/api/love-cards/'+token,'PATCH',{active:true})).status,200);assert.equal((await call('/sorpresa/'+token)).status,200);
 });
 
@@ -57,7 +57,7 @@ const category='rollback-check';await assert.rejects(db.batch([db.prepare('INSER
 test('personalized floral worlds and MP3 persist behind the same PIN protection',async()=>{
  const {defaultLoveContent,loveThemes,lovePalettes,loveDetails}=await import('../dist/shared/romance.js');
  const content={...defaultLoveContent(),theme:'floral-heart',palette:'blush',flower:'lilies',transition:'zoom',photoStyle:'filmstrip',musicMode:'favorite',secretMessage:'Nuestro siguiente capítulo empieza contigo.',recipient:'Mi amor',message:'Esta carta guarda todo el amor de nuestra historia.',details:loveDetails.map(d=>d.id)};
- assert.equal(loveThemes.length,22);assert.equal(lovePalettes.length,9);
+ assert.equal(loveThemes.length,23);assert.equal(lovePalettes.length,9);
  const upload=new FormData();upload.set('file',new Blob([Buffer.from([73,68,51,4,0,0,0,0,0,0,255,251,144,0])],{type:'audio/mpeg'}),'song.mp3');
  let r=await call('/api/uploads','POST',upload);assert.equal(r.status,201,JSON.stringify(r.data));assert.equal(r.data.mime,'audio/mpeg');content.assets=[r.data.id];
  const invalid=await call('/api/love-cards','POST',{content:{...content,transition:'unknown'},privacy:'link',consent:true,previewed:true,requestKey:crypto.randomUUID()});assert.equal(invalid.status,400);
@@ -117,3 +117,23 @@ test('books have correctly linked single and double pages and escape personal te
  const tender=romanticBookIdea('tender','Alex','su generosidad','nuestra caminata');assert.ok(tender.message.includes('Alex'));assert.ok(tender.message.includes('su generosidad'));assert.ok(tender.message.includes('nuestra caminata'));assert.notEqual(tender.message,romanticBookIdea('passionate').message);assert.notEqual(tender.message,romanticBookIdea('playful').message);
 });
 
+test('date invitations persist replies, validate dates and protect the response list and PIN',async()=>{
+ const {defaultLoveContent}=await import('../dist/shared/romance.js');const {defaultInvitation,peruToday}=await import('../dist/shared/invitation.js');
+ const content={...defaultLoveContent(),theme:'date-invite',occasion:'¿Salimos juntos?',recipient:'Mi persona favorita',message:'¿Hacemos un plan bonito juntos? Con mucho cariño.',invitation:defaultInvitation()};
+ const input={content,privacy:'pin',pin:'654321',consent:true,previewed:true,requestKey:crypto.randomUUID()};
+ assert.equal((await call('/api/love-cards','POST',{...input,content:{...content,invitation:null}})).status,400);
+ let r=await call('/api/love-cards','POST',input);assert.equal(r.status,201,JSON.stringify(r.data));const token=r.data.token;
+ const ownerCookie=cookie,ownerCSRF=csrf;cookie='';csrf='';r=await call('/api/session');csrf=r.data.csrf;
+ const reply={status:'accepted',date:peruToday(),time:'19:30',plan:'cinema'};
+ assert.equal((await call(`/api/love-cards/${token}/date-reply`,'POST',reply)).status,403);
+ assert.equal((await call(`/api/love-cards/${token}/date-replies`)).status,404);
+ assert.equal((await call(`/api/love-cards/${token}/unlock`,'POST',{pin:'654321'})).status,200);
+ for(const bad of [{...reply,date:'2026-02-30'},{...reply,time:'25:00'},{...reply,plan:'custom'},{...reply,date:'2000-01-01'}])assert.equal((await call(`/api/love-cards/${token}/date-reply`,'POST',bad)).status,400);
+ assert.equal((await call(`/api/love-cards/${token}/date-reply`,'POST',reply)).status,200);
+ assert.equal((await call(`/api/love-cards/${token}`)).data.reply.plan,'cinema');
+ assert.equal((await call(`/api/love-cards/${token}/date-reply`,'POST',{...reply,plan:'coffee'})).status,200);
+ assert.equal(sqlite.prepare('SELECT count(*) n FROM love_date_replies').get().n,1);
+ const recipientCookie=cookie,recipientCSRF=csrf;cookie=ownerCookie;csrf=ownerCSRF;r=await call(`/api/love-cards/${token}/date-replies`);assert.equal(r.status,200);assert.equal(r.data.replies[0].plan,'coffee');assert.ok(!JSON.stringify(r.data).includes('session_id'));
+ await call(`/api/love-cards/${token}`,'PATCH',{active:false});cookie=recipientCookie;csrf=recipientCSRF;assert.equal((await call(`/api/love-cards/${token}/date-reply`,'POST',reply)).status,404);
+ cookie=ownerCookie;csrf=ownerCSRF;
+});

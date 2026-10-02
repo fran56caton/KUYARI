@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import {validInvitation,cleanInvitation,validReply,type DateInvitation,type DateReply} from '../shared/invitation.js';
 import { validGarden, type GardenConfig } from '../shared/garden.js';
 import QRCode from 'qrcode';
 import { randomUUID } from 'node:crypto';
@@ -16,6 +17,7 @@ interface Row { id: string; public_token: string; session_id: string; user_id: s
 const short = z.string().trim().max(180);
 const url = z.string().max(1000).refine(v => !v || (() => { try { const u = new URL(v); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; } })(), 'Usa un enlace HTTPS').default('');
 const contentSchema = z.object({
+  invitation: z.custom<DateInvitation>(validInvitation, 'Revisa los detalles de tu invitación').transform(cleanInvitation).nullable().default(null),
   garden: z.custom<GardenConfig>(validGarden, 'Revisa las opciones de tu jardín').transform(c=>({design:c.design,flowers:c.flowers.map(f=>({id:f.id,color:f.color,quantity:f.quantity})),shape:c.shape,wrap:c.wrap,ribbon:c.ribbon,extras:[...c.extras],motion:c.motion})).nullable().default(null),
   theme: z.enum(loveThemes.map(t => t.id)), palette: z.enum(lovePalettes.map(t => t.id)), occasion: z.enum(loveOccasions),
   opening: z.enum(['envelope', 'heart', 'gates', 'book']), flower: z.enum(['roses', 'daisies', 'blue', 'peonies', 'tulips', 'lilies']),
@@ -29,7 +31,7 @@ const contentSchema = z.object({
   chapters: z.array(z.object({ title: short.min(1), text: z.string().trim().min(1).max(1000) })).max(5),
   promises: z.array(z.string().trim().min(1).max(300)).max(6), songUrl: url, videoUrl: url,
   assets: z.array(z.uuid()).max(10), giftId: z.string().max(100), giftNote: z.string().trim().max(1000)
-});
+}).refine(c=>c.theme!=='date-invite'||c.invitation!==null, 'Completa las opciones de tu invitación');
 const createSchema = z.object({ content: contentSchema, privacy: z.enum(['link', 'pin']), pin: z.string().max(12).default(''), consent: z.literal(true), previewed: z.literal(true), requestKey: z.uuid() }).refine(d => d.privacy !== 'pin' || /^\d{6,12}$/.test(d.pin), 'Usa un PIN de 6 a 12 dígitos');
 const publicToken = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 const isOwner = (row: Row, s: Session) => row.session_id === s.id || !!(s.userId && row.user_id === s.userId) || ['admin', 'operator'].includes(s.user?.role ?? '');
@@ -62,6 +64,7 @@ export function registerRomance(app: Express, db: LoveDB, config: Config, limit:
     const row = await db.get<Row>('SELECT * FROM love_cards WHERE public_token=?', publicToken.parse(value));
     if (!row) throw new HttpError(404, 'Esta sorpresa no está disponible'); return row;
   };
+  const ensureReplies = () => db.run("CREATE TABLE IF NOT EXISTS love_date_replies (card_id TEXT NOT NULL REFERENCES love_cards(id),session_id TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('accepted','declined')),date TEXT NOT NULL,time TEXT NOT NULL,plan TEXT NOT NULL,updated_at TEXT NOT NULL,PRIMARY KEY(card_id,session_id))");
   app.post('/api/love-cards', limit(20), async (req: Request, res: Response) => {
     const input = createSchema.parse(req.body), s: Session = res.locals.session;
     const requestHash = digest(JSON.stringify(input));
@@ -99,9 +102,29 @@ export function registerRomance(app: Express, db: LoveDB, config: Config, limit:
     if (!row.active && !owner) throw new HttpError(404, 'La persona que creó esta sorpresa ha desactivado el enlace');
     if (!owner && row.privacy === 'pin' && !await db.get('SELECT card_id FROM love_access WHERE session_id=? AND card_id=? AND expires_at>?', s.id, row.id, Date.now())) { res.status(403).json({ error: 'Esta sorpresa tiene un PIN', needsPin: true }); return; }
     const content = JSON.parse(row.content), assets = [];
+    let reply: DateReply | null = null;
+    if (content.theme === 'date-invite') { await ensureReplies(); const r=await db.get<{status:'accepted'|'declined';date:string;time:string;plan:string;updated_at:string}>('SELECT status,date,time,plan,updated_at FROM love_date_replies WHERE card_id=? AND session_id=?',row.id,s.id); if(r)reply={status:r.status,date:r.date,time:r.time,plan:r.plan,updatedAt:r.updated_at}; }
     for (const id of content.assets) { const a = await db.get('SELECT id,mime FROM assets WHERE id=?', id); if (a) assets.push(a); }
     const gift = content.giftId ? await db.get<{ id: string; name: string }>('SELECT id,name FROM products WHERE id=?', content.giftId) : null;
-    res.json({ token: row.public_token, content, privacy: row.privacy, active: !!row.active, owner, assets, createdAt: row.created_at, gift: gift ? { ...gift, image: (await db.get<{ url: string }>('SELECT url FROM product_images WHERE product_id=? ORDER BY position LIMIT 1', gift.id))?.url ?? '' } : null });
+    res.json({ token: row.public_token, content, ...(content.theme==='date-invite'?{reply}:{}), privacy: row.privacy, active: !!row.active, owner, assets, createdAt: row.created_at, gift: gift ? { ...gift, image: (await db.get<{ url: string }>('SELECT url FROM product_images WHERE product_id=? ORDER BY position LIMIT 1', gift.id))?.url ?? '' } : null });
+  });
+  app.post('/api/love-cards/:token/date-reply', limit(30), async (req: Request, res: Response) => {
+    const row=await getRow(String(req.params.token)),s:Session=res.locals.session,c=JSON.parse(row.content);
+    if(!row.active||c.theme!=='date-invite'||!validInvitation(c.invitation))throw new HttpError(404,'Esta invitación no está disponible');
+    if(!isOwner(row,s)&&row.privacy==='pin'&&!await db.get('SELECT card_id FROM love_access WHERE session_id=? AND card_id=? AND expires_at>?',s.id,row.id,Date.now()))throw new HttpError(403,'Abre primero la invitación con su PIN');
+    const input=z.object({status:z.enum(['accepted','declined']),date:z.string().max(10),time:z.string().max(5),plan:z.string().max(30)}).parse(req.body);
+    if(!validReply(input,c.invitation))throw new HttpError(400,'Revisa la fecha, la hora y el plan de tu respuesta');
+    await ensureReplies();
+    if(!await db.get('SELECT card_id FROM love_date_replies WHERE card_id=? AND session_id=?',row.id,s.id)&&(await db.get<{n:number}>('SELECT COUNT(*) n FROM love_date_replies WHERE card_id=?',row.id))!.n>=100)throw new HttpError(429,'Esta invitación alcanzó su límite de respuestas');
+    const updatedAt=new Date().toISOString();
+    await db.run('INSERT INTO love_date_replies (card_id,session_id,status,date,time,plan,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(card_id,session_id) DO UPDATE SET status=excluded.status,date=excluded.date,time=excluded.time,plan=excluded.plan,updated_at=excluded.updated_at',row.id,s.id,input.status,input.date,input.time,input.plan,updatedAt);
+    res.json({...input,updatedAt});
+  });
+  app.get('/api/love-cards/:token/date-replies', limit(60), async (req: Request, res: Response) => {
+    const row=await getRow(String(req.params.token));if(!isOwner(row,res.locals.session))throw new HttpError(404,'Respuestas no disponibles');
+    const c=JSON.parse(row.content);if(c.theme!=='date-invite')throw new HttpError(404,'Esta carta no es una invitación');await ensureReplies();
+    const rows=await db.all<{status:'accepted'|'declined';date:string;time:string;plan:string;updated_at:string}>('SELECT status,date,time,plan,updated_at FROM love_date_replies WHERE card_id=? ORDER BY updated_at DESC LIMIT 100',row.id);
+    res.json({invitation:c.invitation,replies:rows.map(r=>({status:r.status,date:r.date,time:r.time,plan:r.plan,updatedAt:r.updated_at}))});
   });
   app.post('/api/love-cards/:token/unlock', limit(8), async (req: Request, res: Response) => {
     const pin = z.string().regex(/^\d{6,12}$/).parse(req.body.pin), row = await getRow(String(req.params.token));
