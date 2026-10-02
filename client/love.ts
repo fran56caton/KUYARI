@@ -113,9 +113,8 @@ export async function createLove() {
   const chosenGift = allProducts.find(p => p.id === params.get('regalo'));
   if (chosenGift) $<HTMLSelectElement>('[name="giftId"]').value = chosenGift.id;
   drawPreview();
-  go(1);
+  go(0);
   if (chosenGift || params.get('acompanar') === 'regalo') {
-    go(2);
     if (chosenGift) toast('Tu carta acompañará a ' + chosenGift.name + '. Puedes cambiar el regalo.');
     $<HTMLSelectElement>('[name="giftId"]').focus({ preventScroll: true });
   }
