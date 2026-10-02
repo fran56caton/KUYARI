@@ -53,6 +53,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
     const limiter = (limit: number, minutes = 15) => rateLimit({ windowMs: minutes * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo' } });
     app.get('/assets/september.css', (_req, res) => res.sendFile(resolve('assets/september.css')));
+    app.get('/assets/garden.css', (_req, res) => res.sendFile(resolve('assets/garden.css')));
     app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
     app.get('/health', async (_req, res) => { (await db.get('SELECT 1')); res.json({ status: 'ok' }); });
     app.post('/api/payments/webhook', limiter(600), async (req, res) => {
@@ -363,17 +364,19 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     app.use('/api', (_req, _res) => { throw new HttpError(404, 'Ruta no encontrada'); });
     app.use('/assets/web', express.static(resolve('assets/web'), { maxAge: '1d', dotfiles: 'deny' }));
     app.get('/assets/favicon.svg', (_req, res) => res.sendFile(resolve('assets/favicon.svg')));
-    app.use('/src', express.static(resolve('dist/client'), { maxAge: config.NODE_ENV === 'production' ? '1h' : 0, dotfiles: 'deny' }));
-    app.use('/shared', express.static(resolve('dist/shared'), { maxAge: '1h', dotfiles: 'deny' }));
+    app.use('/src', express.static(resolve('dist/client'), { maxAge: 0, dotfiles: 'deny' }));
+    app.use('/shared', express.static(resolve('dist/shared'), { maxAge: 0, dotfiles: 'deny' }));
     app.get('/styles.css', (_req, res) => res.sendFile(resolve('styles.css')));
     app.get('/robots.txt', (_req, res) => res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cuenta\nDisallow: /checkout\nDisallow: /pedido/\nDisallow: /recuerdo/\nDisallow: /sorpresa/\nDisallow: /mis-cartas\nDisallow: /api/\nSitemap: ${config.APP_URL}/sitemap.xml`));
-    app.get('/sitemap.xml', async (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/30-de-septiembre', ...(await products(db)).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
-    app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/pagar-yape$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
+    app.get('/sitemap.xml', async (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/jardin-cartas', '/jardin-flores', '/30-de-septiembre', ...(await products(db)).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
+    app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/jardin-cartas$|\/jardin-flores$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/pagar-yape$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
         let title = 'KUYARI | Tu historia, hecha sorpresa', description = 'Regalos personalizados, flores y recuerdos digitales. Crea una sorpresa que cuente tu historia.', status = 200;
         if (req.path === '/30-de-septiembre') {
             title = '30 de septiembre: carritos y flores azules | KUYARI';
             description = 'Encuentra tu detalle: ramos de carritos, flores azules y cajas sorpresa. Personaliza tu propuesta y consulta por WhatsApp.';
         }
+        if (req.path === '/jardin-cartas') { title = 'Jardín de cartas románticas | KUYARI'; description = 'Personaliza un sobre entre flores. 24 modelos, tus palabras y un QR para acompañar su regalo.'; }
+        if (req.path === '/jardin-flores') { title = 'Diseña su ramo y su carta | KUYARI'; description = 'Combina flores, envolturas, cintas y una dedicatoria. Mira tu propuesta y coordina el regalo por WhatsApp.'; }
         if (req.path.startsWith('/regalos/')) {
             const p = (await products(db)).find(p => req.path === `/regalos/${p.slug}`);
             if (p) {
@@ -400,4 +403,3 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     });
     return app;
 }
-
