@@ -62,3 +62,5 @@
 .book-experience .love-intro{justify-content:flex-start}.book-experience .love-intro>.love-overline{margin-top:auto}.book-experience .love-intro>.love-open-text{margin-bottom:auto}.book-experience .love-opening{flex-shrink:0}
 
 .love-editor [hidden]{display:none!important}.book-love-poster>span{font-size:clamp(16px,min(25cqw,calc((100cqh - 130px)/3.4)),130px)}.book-photos-gallery .book-photo{padding:0;border:0;border-radius:14px;overflow:hidden;box-shadow:none}.book-photos-gallery .book-photo img{object-fit:contain;background:#efe4d6}.book-photos-filmstrip .book-photo{border-top:12px dashed #34272c;border-bottom:12px dashed #34272c;padding:7px;background:#f7ebda}
+
+.book-experience{overflow:clip}
