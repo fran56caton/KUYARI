@@ -1,4 +1,5 @@
 import { defaultLoveContent, type LoveContent } from '../shared/romance.js';
+import { mountDateInvitation, type InvitationOptions } from './love-invitation.js';
 import { esc } from './ui.js';
 import { gardenLetter, gardenBackdrop } from './garden-art.js';
 import { gardenDesigns } from '../shared/garden.js';
@@ -8,7 +9,8 @@ import { buildLoveBook, bookCover } from './love-book.js';
 function safeLink(link: string) { try { const u = new URL(link); return u.protocol === 'https:' && !u.username && !u.password; } catch { return false; } }
 export interface LoveAsset { id: string; mime: string }
 export type LoveExperience = (() => void) & { update: (content: LoveContent, assets: LoveAsset[]) => boolean };
-export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: LoveAsset[] = []): LoveExperience {
+export function mountLoveExperience(root: HTMLElement, c: LoveContent, assets: LoveAsset[] = [], invitationOptions: InvitationOptions = {}): LoveExperience {
+  if (c.theme === 'date-invite') return mountDateInvitation(root, c, invitationOptions);
   c = { ...defaultLoveContent(), ...c };
   const book = isLoveBook(c);
   let singleBook = root.clientWidth < 640;

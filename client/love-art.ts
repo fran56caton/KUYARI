@@ -1,7 +1,9 @@
 import type { LoveContent } from '../shared/romance.js';
+import {pixelPet} from './love-invitation.js';
 let artId = 0;
 export function loveArt(c: Pick<LoveContent, 'theme' | 'flower' | 'details'>) {
   const id = `love-art-${++artId}`;
+  if(c.theme==='date-invite') return pixelPet();
   const flower = c.flower;
   const bloom = (x: number, y: number, scale: number, turn = 0) => `<use href="#${id}-flower" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"/>`;
   const petals = Array.from({ length: flower === 'daisies' ? 14 : flower === 'lilies' || flower === 'tulips' ? 6 : 10 }, (_, i) => `<ellipse cx="0" cy="-25" rx="${flower === 'daisies' ? 9 : 18}" ry="${flower === 'peonies' ? 32 : flower === 'lilies' ? 44 : flower === 'tulips' ? 35 : 27}" fill="url(#${id}-petal)" stroke="var(--love-edge)" stroke-width=".6" transform="rotate(${i * (flower === 'daisies' ? 360 / 14 : flower === 'lilies' || flower === 'tulips' ? 60 : 36)})"/>`).join('');
@@ -31,4 +33,3 @@ export function loveParticles(c: LoveContent) {
     return `<span class="love-particle particle-${i % 10} particle-${kind}">${icon}</span>`;
   }).join('')}</div>`;
 }
-
