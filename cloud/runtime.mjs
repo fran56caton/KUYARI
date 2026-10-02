@@ -17,6 +17,14 @@ const assets={async fetch(request){
 }};
 async function initialize(binding) {
   await binding.prepare('CREATE TABLE IF NOT EXISTS hosting_migrations (id TEXT PRIMARY KEY)').run();
+  if(!await binding.prepare("SELECT id FROM hosting_migrations WHERE id='yape-v1'").first()) {
+    await binding.batch([
+      binding.prepare('CREATE TABLE IF NOT EXISTS payment_settings (id TEXT PRIMARY KEY, value TEXT NOT NULL)'),
+      binding.prepare("CREATE TABLE IF NOT EXISTS yape_reports (id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id), reference TEXT NOT NULL UNIQUE, payer TEXT NOT NULL, amount INTEGER NOT NULL, status TEXT NOT NULL CHECK(status IN ('review','approved','rejected')), merchant TEXT NOT NULL, reviewed_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)"),
+      binding.prepare("INSERT OR IGNORE INTO hosting_migrations(id) VALUES('yape-v1')")
+    ]);
+  }
+  await binding.prepare("INSERT OR IGNORE INTO payment_settings(id,value) VALUES('yape',?)").bind(JSON.stringify({enabled:true,phone:'900080962',holder:'MARIA CLIDA BERROSPI AQUINO',qrUrl:'',instructions:'Confirma el regalo, el importe y la entrega con KUYARI antes de pagar. Comprueba que el destinatario en Yape sea MARIA CLIDA BERROSPI AQUINO.'})).run();
   if(await binding.prepare("SELECT id FROM hosting_migrations WHERE id='kuyari-turso-v1'").first())return;
   const schema=(await readFile(resolve('cloud/schema.sql'),'utf8')).split('--> statement-breakpoint').map(s=>s.trim()).filter(Boolean).map(s=>s.replace(/^CREATE TABLE /,'CREATE TABLE IF NOT EXISTS ').replace(/^CREATE UNIQUE INDEX /,'CREATE UNIQUE INDEX IF NOT EXISTS ').replace(/^CREATE INDEX /,'CREATE INDEX IF NOT EXISTS '));
   const seed=JSON.parse(await readFile(resolve('dist/cloud/seed.json'),'utf8'));

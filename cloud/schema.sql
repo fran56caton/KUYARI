@@ -194,6 +194,10 @@ CREATE TABLE `password_resets` (
 	FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
+CREATE TABLE payment_settings (id TEXT PRIMARY KEY, value TEXT NOT NULL);
+--> statement-breakpoint
+CREATE TABLE yape_reports (id TEXT PRIMARY KEY, order_id TEXT NOT NULL REFERENCES orders(id), reference TEXT NOT NULL UNIQUE, payer TEXT NOT NULL, amount INTEGER NOT NULL, status TEXT NOT NULL CHECK(status IN ('review','approved','rejected')), merchant TEXT NOT NULL, reviewed_by TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+--> statement-breakpoint
 CREATE TABLE `payments` (
 	`id` text PRIMARY KEY NOT NULL,
 	`order_id` text NOT NULL,

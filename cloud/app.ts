@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 const resolve = (...parts: string[]) => parts.join('/');
 import QRCode from 'qrcode';
 import { registerRomance, romanceAssetReadable } from './romance.js';
+import { registerYape } from './yape.js';
 import type { Config } from './config.js';
 import { paymentReady } from './config.js';
 import type { DB } from './db.js';
@@ -67,6 +68,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     });
     app.use('/api', limiter(900), sessions(db, config), csrfGuard(config));
     registerRomance(app, db, config, limiter);
+    registerYape(app, db, authorizedOrder);
     app.get('/api/session', (_req, res) => res.json({ csrf: res.locals.session.csrf, user: res.locals.session.user }));
     app.get('/api/store', async (_req, res) => res.json({ name: 'KUYARI', currency: 'PEN', environment: config.NODE_ENV, orderChannel: config.ORDER_CHANNEL, whatsapp: [config.WHATSAPP_PRIMARY, config.WHATSAPP_SECONDARY], hasDemoProducts: Boolean((await db.get('SELECT id FROM products WHERE demo=1 AND active=1 LIMIT 1'))), paymentMode: config.PAYMENT_MODE, paymentReady: config.ORDER_CHANNEL === 'online' && paymentReady(config), storeLive: config.STORE_LIVE === 'true', businessName: config.BUSINESS_NAME, businessEmail: config.BUSINESS_EMAIL, zones: (await zones(db)), categories: (await db.all('SELECT * FROM categories WHERE active=1')) }));
     app.get('/api/products', async (req, res) => {
@@ -366,7 +368,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     app.get('/styles.css', (_req, res) => res.sendFile(resolve('styles.css')));
     app.get('/robots.txt', (_req, res) => res.type('text/plain').send(`User-agent: *\nDisallow: /admin\nDisallow: /cuenta\nDisallow: /checkout\nDisallow: /pedido/\nDisallow: /recuerdo/\nDisallow: /sorpresa/\nDisallow: /mis-cartas\nDisallow: /api/\nSitemap: ${config.APP_URL}/sitemap.xml`));
     app.get('/sitemap.xml', async (_req, res) => res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${['/', '/regalos', '/30-de-septiembre', ...(await products(db)).map(p => `/regalos/${p.slug}`)].map(p => `<url><loc>${escape(config.APP_URL + p)}</loc></url>`).join('')}</urlset>`));
-    app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
+    app.get(/^(?:\/$|\/regalos(?:\/[a-z0-9-]+)?$|\/studio$|\/checkout$|\/cuenta$|\/recuperar$|\/seguimiento$|\/pedido\/KU-[A-F0-9]{10}$|\/recuerdo\/[A-Za-z0-9_-]{43}$|\/asistente$|\/30-de-septiembre$|\/pagar-yape$|\/crear-qr$|\/mis-cartas$|\/sorpresa\/[A-Za-z0-9_-]{43}$|\/admin$|\/activar-admin$|\/politicas\/[a-z-]+$)/, async (req, res) => {
         let title = 'KUYARI | Tu historia, hecha sorpresa', description = 'Regalos personalizados, flores y recuerdos digitales. Crea una sorpresa que cuente tu historia.', status = 200;
         if (req.path === '/30-de-septiembre') {
             title = '30 de septiembre: carritos y flores azules | KUYARI';
