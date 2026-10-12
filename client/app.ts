@@ -4,6 +4,7 @@ import { initCart, checkout } from './checkout.js';
 import { initContact, contactLinks } from './contact.js';
 import { enhanceHome } from './home.js';
 const homeHTML = $('#contenido').innerHTML;
+let renderedRoute = location.pathname + location.search;
 const imports = { garden: () => import('./garden.js'), love: () => import('./love.js'), catalog: () => import('./catalog.js'), customer: () => import('./customer.js'), seasonal: () => import('./seasonal.js'), studio: () => import('./studio.js'), admin: () => import('./admin.js'), yape: () => import('./yape.js') };
 function warmRoute(path: string) {
   const loader = path.startsWith('/jardin-') ? imports.garden : path === '/crear-qr' || path === '/mis-cartas' || path.startsWith('/sorpresa/') ? imports.love : path.startsWith('/regalos') || path === '/asistente' ? imports.catalog : path === '/studio' ? imports.studio : path === '/30-de-septiembre' ? imports.seasonal : path === '/admin' ? imports.admin : path === '/pagar-yape' ? imports.yape : imports.customer;
@@ -36,7 +37,10 @@ async function start() {
     if (link.pathname === location.pathname && link.search === location.search && link.hash) return;
     e.preventDefault(); navigate(new URL(link.href)).catch(fail);
   });
-  window.addEventListener('popstate', () => navigate(new URL(location.href), false).catch(fail));
+  window.addEventListener('popstate', () => {
+    if (location.pathname + location.search === renderedRoute) positionSection();
+    else navigate(new URL(location.href), false).catch(fail);
+  });
 }
 async function renderRoute() {
   const path = location.pathname;
@@ -66,6 +70,7 @@ async function renderRoute() {
   document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(link => { const url = new URL(link.href); if (url.origin === location.origin && url.pathname === '/crear-qr' && !url.hash) { url.hash = 'personalizar'; link.href = url.pathname + url.search + url.hash; } });
   const footerContact = document.querySelector('#footer-contact'); if (footerContact) footerContact.innerHTML = contactLinks('Hola, KUYARI. Quisiera información sobre sus regalos.', true);
   document.querySelectorAll<HTMLAnchorElement>('#main-nav a').forEach(link => { const url = new URL(link.href); link.removeAttribute('aria-current'); if (url.pathname === path && (!url.hash || url.hash === location.hash)) link.setAttribute('aria-current', url.hash ? 'location' : 'page'); });
+  renderedRoute = location.pathname + location.search;
   positionSection();
 }
 function isPage(path: string) { return /^(?:\/$|\/(?:regalos(?:\/[a-z0-9-]+)?|jardin-cartas|jardin-flores|studio|checkout|cuenta|recuperar|seguimiento|asistente|30-de-septiembre|crear-qr|mis-cartas|pagar-yape|admin|activar-admin)$|\/(?:pedido|recuerdo|sorpresa|politicas)\/[^/]+$)/.test(path); }
