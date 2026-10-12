@@ -16,6 +16,16 @@ const seed=JSON.parse(fs.readFileSync('cloud/seed.json','utf8'));await db.batch(
 import {DB} from '../dist/cloud/db.js';import {createApp} from '../dist/cloud/app.js';import {readConfig} from '../dist/cloud/config.js';
 const worker={async fetch(request,env){const store=new DB(env.DB,env.BUCKET,env.ASSETS,origin);return createApp(store,readConfig({NODE_ENV:'production',APP_URL:origin,DB_PATH:'turso-persistent',STORE_LIVE:'true',ORDER_CHANNEL:'whatsapp',S3_BUCKET:'turso-persistent-assets',SETUP_TOKEN:env.SETUP_TOKEN})).fetch(request,store);}};
 async function call(path,method='GET',body){const headers={cookie,origin,'x-csrf-token':csrf};if(body&&!(body instanceof FormData))headers['Content-Type']='application/json';const response=await worker.fetch(new Request(origin+path,{method,headers,...(body?{body:body instanceof FormData?body:JSON.stringify(body)}:{})}),env,{waitUntil(){}});if(response.headers.get('set-cookie'))cookie=response.headers.get('set-cookie').split(';')[0];const data=response.headers.get('content-type')?.includes('json')?await response.json():await response.text();return {status:response.status,data};}
+test('home refinement stylesheet is publicly served and the home module is built',async()=>{
+  const css=await call('/assets/experience.css');
+  assert.equal(css.status,200);
+  assert.match(css.data,/--ease-ui/);
+  const home=await call('/');
+  assert.equal(home.status,200);
+  assert.match(home.data,/data-home-hero-link/);
+  assert.match(home.data,/assets\/experience\.css/);
+  assert.equal(fs.existsSync('dist/client/home.js'),true);
+});
 test('cloud catalog, admin, product uploads, order and privacy',async()=>{
  let r=await call('/api/session');assert.equal(r.status,200);csrf=r.data.csrf;
  r=await call('/api/products');assert.equal(r.data.total,12);assert.ok(r.data.products.every(p=>p.inquiryOnly));

@@ -56,6 +56,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
     app.get('/assets/invitation.css', (_req, res) => res.sendFile(resolve('assets/invitation.css')));
     app.get('/assets/garden.css', (_req, res) => res.sendFile(resolve('assets/garden.css')));
     app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
+    app.get('/assets/experience.css', (_req, res) => res.sendFile(resolve('assets/experience.css')));
     app.get('/health', async (_req, res) => { (await db.get('SELECT 1')); res.json({ status: 'ok' }); });
     app.post('/api/payments/webhook', limiter(600), async (req, res) => {
         const dataId = z.string().regex(/^\d{1,32}$/).parse(req.query['data.id']);

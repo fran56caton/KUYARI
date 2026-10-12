@@ -37,6 +37,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   const limiter = (limit: number, minutes = 15) => rateLimit({ windowMs: minutes * 60000, limit, standardHeaders: 'draft-8', legacyHeaders: false, message: { error: 'Demasiados intentos. Espera unos minutos e inténtalo de nuevo' } });
   app.get('/assets/september.css', (_req, res) => res.sendFile(resolve('assets/september.css')));
   app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
+  for (const stylesheet of ['garden', 'invitation', 'experience']) app.get(`/assets/${stylesheet}.css`, (_req, res) => res.sendFile(resolve(`assets/${stylesheet}.css`)));
   app.get('/health', (_req, res) => { db.get('SELECT 1'); res.json({ status: 'ok' }); });
   app.post('/api/payments/webhook', limiter(600), async (req, res) => {
     const dataId = z.string().regex(/^\d{1,32}$/).parse(req.query['data.id']);

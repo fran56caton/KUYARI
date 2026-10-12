@@ -2,6 +2,7 @@ import type { User, Product } from '../shared/models.js';
 import { $, api, state, card, page, esc, fail, leavePage, type Store } from './ui.js';
 import { initCart, checkout } from './checkout.js';
 import { initContact, contactLinks } from './contact.js';
+import { enhanceHome } from './home.js';
 const homeHTML = $('#contenido').innerHTML;
 const imports = { garden: () => import('./garden.js'), love: () => import('./love.js'), catalog: () => import('./catalog.js'), customer: () => import('./customer.js'), seasonal: () => import('./seasonal.js'), studio: () => import('./studio.js'), admin: () => import('./admin.js'), yape: () => import('./yape.js') };
 function warmRoute(path: string) {
@@ -10,17 +11,24 @@ function warmRoute(path: string) {
 }
 async function start() {
   warmRoute(location.pathname);
+  // Establish the session cookie before other API calls that also use sessions.
   const session = await api<{ csrf: string; user: User | null }>('/api/session');
   const store = await api<Store>('/api/store');
   state.csrf = session.csrf; state.user = session.user; state.store = store;
   $('#year').textContent = String(new Date().getFullYear());
   if (store.hasDemoProducts || (store.environment === 'production' && !store.storeLive)) { const banner = $('#environment-banner'); banner.hidden = false; banner.textContent = store.hasDemoProducts ? 'Colección de muestra · consulta por WhatsApp la disponibilidad y el precio antes de confirmar.' : 'Estamos preparando nuestra apertura. Las compras aún no están habilitadas.'; }
-  $('#menu-toggle').onclick = () => { const open = $('#main-nav').classList.toggle('show'); $('#menu-toggle').setAttribute('aria-expanded', String(open)); };
-  $('#main-nav').addEventListener('click', e => { if ((e.target as Element).closest('a')) { $('#main-nav').classList.remove('show'); $('#menu-toggle').setAttribute('aria-expanded', 'false'); } });
+  const closeMenu = () => { $('#main-nav').classList.remove('show'); $('#menu-toggle').setAttribute('aria-expanded', 'false'); $('#menu-toggle').setAttribute('aria-label', 'Abrir menú'); };
+  $('#menu-toggle').onclick = () => { const open = $('#main-nav').classList.toggle('show'); $('#menu-toggle').setAttribute('aria-expanded', String(open)); $('#menu-toggle').setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú'); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#main-nav').classList.contains('show')) { closeMenu(); $<HTMLButtonElement>('#menu-toggle').focus(); } });
+  document.addEventListener('click', e => { if (!(e.target as Element).closest('.site-header')) closeMenu(); });
+  matchMedia('(min-width: 1051px)').addEventListener('change', closeMenu);
+  $('#main-nav').addEventListener('click', e => { if ((e.target as Element).closest('a')) closeMenu(); });
   initCart();
   initContact();
   $('#main-nav').insertAdjacentHTML('beforeend', '<a href="/pagar-yape">Yape</a>');
   await renderRoute();
+  document.addEventListener('focusin', e => { const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]'); if (a && a.origin === location.origin) warmRoute(a.pathname); });
+  document.addEventListener('pointerdown', e => { const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]'); if (a && a.origin === location.origin) warmRoute(a.pathname); }, { passive: true });
   document.addEventListener('pointerover', e => { const a = (e.target as Element).closest<HTMLAnchorElement>('a[href]'); if (a && a.origin === location.origin) warmRoute(a.pathname); }, { passive: true });
   document.addEventListener('click', e => {
     const link = (e.target as Element).closest<HTMLAnchorElement>('a[href]');
@@ -33,7 +41,7 @@ async function start() {
 async function renderRoute() {
   const path = location.pathname;
   document.body.classList.remove('love-immersive');
-  if (path === '/') { const data = await api<{ products: Product[] }>('/api/products?excludeOccasion=30%20de%20septiembre'); leavePage(); $('#contenido').innerHTML = homeHTML; document.title = 'KUYARI | Tu historia, hecha sorpresa'; $('#home-products').innerHTML = data.products.slice(0, 6).map(card).join('') || '<p class="empty-state">Nuestra colección está tomando forma. Vuelve pronto para encontrar tu próxima sorpresa.</p>'; }
+  if (path === '/') { const data = await api<{ products: Product[] }>('/api/products?excludeOccasion=30%20de%20septiembre'); leavePage(); $('#contenido').innerHTML = homeHTML; document.title = 'KUYARI | Tu historia, hecha sorpresa'; $('#home-products').innerHTML = data.products.slice(0, 6).map(card).join('') || '<p class="empty-state">Nuestra colección está tomando forma. Vuelve pronto para encontrar tu próxima sorpresa.</p>'; enhanceHome(data.products); }
   else if (path === '/30-de-septiembre') await (await import('./seasonal.js')).campaign();
   else if (path === '/jardin-cartas') await (await import('./garden.js')).gardenLetters();
   else if (path === '/jardin-flores') await (await import('./garden.js')).gardenFlowersPage();
@@ -57,6 +65,7 @@ async function renderRoute() {
   else page('No encontramos esta sección.', '<p>Elige una sección del menú para continuar.</p><a class="btn btn-primary" href="/">Volver al inicio</a>');
   document.querySelectorAll<HTMLAnchorElement>('a[href]').forEach(link => { const url = new URL(link.href); if (url.origin === location.origin && url.pathname === '/crear-qr' && !url.hash) { url.hash = 'personalizar'; link.href = url.pathname + url.search + url.hash; } });
   const footerContact = document.querySelector('#footer-contact'); if (footerContact) footerContact.innerHTML = contactLinks('Hola, KUYARI. Quisiera información sobre sus regalos.', true);
+  document.querySelectorAll<HTMLAnchorElement>('#main-nav a').forEach(link => { const url = new URL(link.href); link.removeAttribute('aria-current'); if (url.pathname === path && (!url.hash || url.hash === location.hash)) link.setAttribute('aria-current', url.hash ? 'location' : 'page'); });
   positionSection();
 }
 function isPage(path: string) { return /^(?:\/$|\/(?:regalos(?:\/[a-z0-9-]+)?|jardin-cartas|jardin-flores|studio|checkout|cuenta|recuperar|seguimiento|asistente|30-de-septiembre|crear-qr|mis-cartas|pagar-yape|admin|activar-admin)$|\/(?:pedido|recuerdo|sorpresa|politicas)\/[^/]+$)/.test(path); }
