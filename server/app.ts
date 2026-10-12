@@ -30,7 +30,7 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.disable('x-powered-by');
   if (config.TRUST_PROXY === 'true') app.set('trust proxy', 1);
   app.use(helmet({ contentSecurityPolicy: { directives: {
-    defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], imgSrc: ["'self'", 'blob:'], mediaSrc: ["'self'", 'https:'], connectSrc: ["'self'"], objectSrc: ["'none'"], frameAncestors: ["'none'"], formAction: ["'self'"], ...(config.NODE_ENV !== 'production' ? { upgradeInsecureRequests: null } : {})
+    defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'", 'https://fonts.googleapis.com'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], imgSrc: ["'self'", 'blob:'], mediaSrc: ["'self'", 'https:', 'blob:'], connectSrc: ["'self'"], objectSrc: ["'none'"], frameAncestors: ["'none'"], formAction: ["'self'"], ...(config.NODE_ENV !== 'production' ? { upgradeInsecureRequests: null } : {})
   } }, referrerPolicy: { policy: 'no-referrer' }, strictTransportSecurity: config.NODE_ENV === 'production' ? { maxAge: 31536000 } : false }));
   app.use(express.json({ limit: '100kb', strict: true }));
   app.use('/api', (_req, res, next) => { res.setHeader('Cache-Control', 'no-store'); next(); });
@@ -38,6 +38,8 @@ export function createApp(db: DB, config: Config, provider: PaymentProvider = ne
   app.get('/assets/september.css', (_req, res) => res.sendFile(resolve('assets/september.css')));
   app.get('/assets/love.css', (_req, res) => res.sendFile(resolve('assets/love.css')));
   for (const stylesheet of ['garden', 'invitation', 'experience']) app.get(`/assets/${stylesheet}.css`, (_req, res) => res.sendFile(resolve(`assets/${stylesheet}.css`)));
+  app.get('/assets/world.css', (_req, res) => res.sendFile(resolve('assets/world.css')));
+  app.get(/^\/assets\/world\/(?:(?:entrada|flores|cartas|sorpresa)-(?:d|m)\.webp|jardin-(?:d|m)\.mp4)$/, (req, res) => res.sendFile(resolve(req.path.slice(1))));
   app.get('/health', (_req, res) => { db.get('SELECT 1'); res.json({ status: 'ok' }); });
   app.post('/api/payments/webhook', limiter(600), async (req, res) => {
     const dataId = z.string().regex(/^\d{1,32}$/).parse(req.query['data.id']);

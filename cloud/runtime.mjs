@@ -5,13 +5,14 @@ import {DB} from '../dist/cloud/db.js';
 import {createApp} from '../dist/cloud/app.js';
 import {readConfig} from '../dist/cloud/config.js';
 let initialization;
-const mime={'.js':'text/javascript; charset=utf-8','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.webp':'image/webp'};
+const mime={'.js':'text/javascript; charset=utf-8','.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.webp':'image/webp','.mp4':'video/mp4'};
 const assets={async fetch(request){
   const pathname=new URL(request.url).pathname;
   let file;
   if(['/index.html','/styles.css'].includes(pathname))file=pathname.slice(1);
   else if(/^\/(src|shared)\/[a-zA-Z0-9_-]+\.js$/.test(pathname))file=pathname.startsWith('/src/')?'dist/client/'+pathname.slice(5):'dist'+pathname;
   else if(/^\/assets\/[a-zA-Z0-9_/-]+\.(css|svg|webp)$/.test(pathname))file=pathname.slice(1);
+  else if(/^\/assets\/world\/jardin-(?:d|m)\.mp4$/.test(pathname))file=pathname.slice(1);
   else return new Response('missing',{status:404});
   try{return new Response(await readFile(resolve(file)),{headers:{'Content-Type':mime[extname(file)]??'application/octet-stream'}});}catch{return new Response('missing',{status:404});}
 }};

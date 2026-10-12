@@ -1,0 +1,30 @@
+{
+  "d": {
+    "programs": [],
+    "streams": [
+      {
+        "width": 1280,
+        "height": 720,
+        "r_frame_rate": "24/1"
+      }
+    ],
+    "format": {
+      "duration": "15.875000",
+      "size": "6239345"
+    }
+  },
+  "m": {
+    "programs": [],
+    "streams": [
+      {
+        "width": 720,
+        "height": 1280,
+        "r_frame_rate": "24/1"
+      }
+    ],
+    "format": {
+      "duration": "15.875000",
+      "size": "4184284"
+    }
+  }
+}

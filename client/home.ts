@@ -1,8 +1,11 @@
 import type { Product } from '../shared/models.js';
 import { esc, onPageLeave } from './ui.js';
+import { mountGardenWorld } from './garden-world.js';
 
 /** Real catalogue imagery stays editable through the existing administrator. */
 export function enhanceHome(products: Product[]) {
+  const world = document.querySelector<HTMLElement>('#jardin-vivo');
+  const cleanupWorld = world ? mountGardenWorld(world) : undefined;
   const photographed = products.filter(p => p.images[0]?.url);
   const floral = photographed.find(p => /rosa pastel/i.test(p.name)) ?? photographed.find(p => /ramo|flor/i.test(p.name));
   const hero = document.querySelector<HTMLImageElement>('[data-home-hero]');
@@ -18,7 +21,7 @@ export function enhanceHome(products: Product[]) {
 
   const steps = document.querySelectorAll<HTMLElement>('[data-story-step]');
   const scene = document.querySelector<HTMLElement>('[data-story-scene]');
-  if (!steps.length || !scene || !('IntersectionObserver' in window)) return;
+  if (!steps.length || !scene || !('IntersectionObserver' in window)) { onPageLeave(() => cleanupWorld?.()); return; }
   const observer = new IntersectionObserver(entries => {
     for (const entry of entries) {
       if (!entry.isIntersecting) continue;
@@ -28,5 +31,5 @@ export function enhanceHome(products: Product[]) {
     }
   }, { rootMargin: '-20% 0px -35% 0px', threshold: 0 });
   steps.forEach(step => observer.observe(step));
-  onPageLeave(() => observer.disconnect());
+  onPageLeave(() => { observer.disconnect(); cleanupWorld?.(); });
 }

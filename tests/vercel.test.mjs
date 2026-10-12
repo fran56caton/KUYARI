@@ -24,6 +24,15 @@ test('home refinement stylesheet is publicly served and the home module is built
   assert.equal(home.status,200);
   assert.match(home.data,/data-home-hero-link/);
   assert.match(home.data,/assets\/experience\.css/);
+  assert.match(home.data,/id="jardin-vivo"/);
+  assert.match(home.data,/assets\/world\.css/);
+  const worldCss=await call('/assets/world.css');
+  assert.equal(worldCss.status,200);
+  assert.match(worldCss.data,/world-stage/);
+  const movie=await call('/assets/world/jardin-m.mp4');
+  assert.equal(movie.status,200);
+  const forbidden=await call('/assets/world/../../.env');
+  assert.equal(forbidden.status,404);
   assert.equal(fs.existsSync('dist/client/home.js'),true);
 });
 test('cloud catalog, admin, product uploads, order and privacy',async()=>{
