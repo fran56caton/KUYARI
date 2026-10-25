@@ -1,11 +1,19 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
+import { maintenanceResponse } from '../server/maintenance.js';
 // The isolated hosting adapter is JavaScript and is covered by integration tests.
 // @ts-expect-error JavaScript hosting adapter has no declaration file.
 import { handle } from '../cloud/runtime.mjs';
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
   try {
+    const closure = maintenanceResponse(req.url ?? '/', req.method);
+    if (closure) {
+      res.statusCode = closure.status;
+      closure.headers.forEach((value, key) => res.setHeader(key, value));
+      res.end(req.method === 'HEAD' ? undefined : await closure.text());
+      return;
+    }
     const headers=new Headers();
     for(const [key,value] of Object.entries(req.headers))if(value)headers.set(key,Array.isArray(value)?value.join(','):value);
     headers.set('x-kuyari-client-ip',String(req.headers['x-vercel-forwarded-for']??'local').split(',')[0].trim());
