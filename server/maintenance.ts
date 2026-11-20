@@ -1,6 +1,6 @@
 // Temporary closure requested by the owner. Restore normal routing in vercel.json
 // and set this flag to false to reopen; no catalogue or order records are changed.
-export const maintenanceEnabled = true;
+export const maintenanceEnabled = false;
 
 const message = 'La página está temporalmente fuera de servicio. Vuelve más adelante.';
 const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#4a1734"><title>KUYARI · Pausa temporal</title><style>html{color-scheme:light;background:#faf4ef;color:#4a1734;font-family:Georgia,serif}body{margin:0;min-height:100svh;display:grid;place-items:center}main{padding:48px 24px;text-align:center;max-width:38rem}strong{font-family:Arial,sans-serif;font-size:1.15rem;letter-spacing:.24em}h1{font-size:clamp(2rem,7vw,3.5rem);font-weight:400;line-height:1.1;margin:40px 0 20px}p{font-family:Arial,sans-serif;color:#67515c;line-height:1.7;font-size:1rem;margin:0;max-width:38ch;margin-inline:auto}::selection{background:#4a1734;color:#fffdfb}</style></head><body><main><strong>KUYARI</strong><h1>Estamos en una<br>pausa temporal.</h1><p>${message}</p></main></body></html>`;

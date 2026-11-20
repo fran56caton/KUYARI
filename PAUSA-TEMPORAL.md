@@ -1,5 +1,7 @@
 # Pausa temporal de KUYARI
 
+Estado actual: reapertura solicitada por el propietario el 20 de noviembre de 2026. `maintenanceEnabled=false` y rutas normales restauradas. La tienda vuelve a usar sus controles de acceso y validaciones habituales. No se modifican productos, cartas ni pedidos.
+
 Solicitada por el propietario el 25 de octubre de 2026. Todas las rutas del despliegue, incluidos archivos, administración y API, responden 503 sin caché. Los pedidos y las cargas quedan bloqueados antes de leer el cuerpo de la petición o conectar con los datos. Se conserva el sitio completo, el catálogo, las cartas y los pedidos existentes.
 
 Para reabrir cuando el propietario lo solicite:
